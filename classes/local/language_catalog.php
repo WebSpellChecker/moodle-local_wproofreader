@@ -50,7 +50,7 @@ class language_catalog {
     /**
      * Replace the cached language list.
      *
-     * @param array<string,string> $languages Map of code => label.
+     * @param array $languages Map of code => label.
      */
     public static function cache(array $languages): void {
         $sanitised = [];
