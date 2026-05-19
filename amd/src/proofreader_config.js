@@ -40,11 +40,12 @@ const toArray = (value) => Array.isArray(value) ? value : [];
  */
 export const apply = (config) => {
     const isBadgeEnabled = toBoolean(config.enableBadgeButton, true);
+    const defaultBadgeActions = isBadgeEnabled
+        ? ['addWord', 'ignoreAll', 'settings', 'toggle', 'proofreadDialog']
+        : ['addWord', 'ignoreAll', 'settings', 'proofreadDialog'];
     const badgeActions = toArray(config.actionItems).length
         ? config.actionItems
-        : (isBadgeEnabled
-            ? ['addWord', 'ignoreAll', 'settings', 'toggle', 'proofreadDialog']
-            : ['addWord', 'ignoreAll', 'settings', 'proofreadDialog']);
+        : defaultBadgeActions;
 
     window.WEBSPELLCHECKER_CONFIG = {
         autoSearch: toBoolean(config.autoSearch, true),

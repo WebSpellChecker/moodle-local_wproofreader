@@ -22,9 +22,9 @@
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
+ * Run upgrade steps for local_wproofreader.
+ *
  * @param int $oldversion Previously installed plugin version.
  * @return bool
  */
