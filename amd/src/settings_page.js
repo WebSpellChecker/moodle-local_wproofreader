@@ -153,6 +153,8 @@ export const init = async(config) => {
             updateLanguageDropdown(result);
             sendLanguagesToServer(result);
         },
-        error: () => {},
+        error: () => {
+            // Bundle failure on the settings page is silent; the static fallback language list keeps the dropdown usable.
+        },
     });
 };
