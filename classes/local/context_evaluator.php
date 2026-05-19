@@ -16,8 +16,6 @@
 
 namespace local_wproofreader\local;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Decides whether WProofreader should be activated on the current page.
  *
@@ -30,7 +28,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class context_evaluator {
-
     /**
      * Should WProofreader be enabled on the given page?
      *

@@ -16,8 +16,6 @@
 
 namespace local_wproofreader\local;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Static fallback language list, with a thin cache for the service-reported list.
  *
@@ -31,7 +29,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class language_catalog {
-
     /** Config key where the cached service language list is stored. */
     public const CONFIG_KEY = 'cached_languages';
 
