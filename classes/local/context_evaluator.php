@@ -121,16 +121,29 @@ class context_evaluator {
     /**
      * Whether the current module is a quiz-style activity.
      *
+     * On the quiz attempt page (`mod-quiz-attempt`) the hook fires before
+     * `$PAGE->cm` is populated, so `$page->cm` is null at this point even
+     * though it is set later (the body class still ends up with
+     * `cm-type-quiz`). Pagetype is set by the time the hook fires and is
+     * used as a fallback signal.
+     *
      * @param \moodle_page $page Current page.
      * @return bool
      */
     private static function is_quiz_module(\moodle_page $page): bool {
-        if (!isset($page->cm) || !$page->cm) {
-            return false;
+        $modnames = ['quiz', 'questionnaire', 'feedback'];
+
+        if (isset($page->cm) && $page->cm) {
+            return in_array((string) $page->cm->modname, $modnames, true);
         }
 
-        $modname = (string) $page->cm->modname;
+        $pagetype = (string) $page->pagetype;
+        foreach ($modnames as $modname) {
+            if (strpos($pagetype, "mod-{$modname}-") === 0) {
+                return true;
+            }
+        }
 
-        return in_array($modname, ['quiz', 'questionnaire', 'feedback'], true);
+        return false;
     }
 }

@@ -97,7 +97,7 @@ All settings live under *Site administration > Plugins > Local plugins > WProofr
 | Enable in courses and activities | enabled  | `CONTEXT_COURSE`, `CONTEXT_MODULE` (excluding quiz / feedback) |
 | Enable in course categories      | enabled  | `CONTEXT_COURSECAT` |
 | Enable on user pages             | enabled  | `CONTEXT_USER` (profile, dashboard, personal blog) |
-| Enable in quiz attempts          | enabled  | `mod_quiz`, `mod_questionnaire`, `mod_feedback` |
+| Enable in quiz attempts          | disabled | `mod_quiz`, `mod_questionnaire`, `mod_feedback` |
 | Enable on system pages           | disabled | `CONTEXT_SYSTEM` pages such as the global calendar, global search, and system tag browsing. The site front page itself is treated as a course and falls under *Enable in courses and activities*. |
 | Enable in site administration    | disabled | Pages with a `pagetype` that starts with `admin-` |
 
