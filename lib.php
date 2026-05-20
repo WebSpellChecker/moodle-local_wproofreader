@@ -34,11 +34,5 @@ defined('MOODLE_INTERNAL') || die();
  * @return string HTML appended to the top of the body (empty in normal operation).
  */
 function local_wproofreader_before_standard_top_of_body_html(): string {
-    if (defined('LOCAL_WPROOFREADER_INJECTED') && LOCAL_WPROOFREADER_INJECTED) {
-        return '';
-    }
-
-    \local_wproofreader\local\page_injector::inject();
-
-    return '';
+    return \local_wproofreader\local\page_injector::inject();
 }

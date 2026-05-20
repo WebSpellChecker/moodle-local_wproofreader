@@ -33,10 +33,15 @@ import {loadBundle} from 'local_wproofreader/bundle_loader';
 /**
  * Boot WProofreader on the current page.
  *
- * @param {Object} config Server-side configuration payload.
+ * Reads the config payload from window.WPROOFREADER_BOOTSTRAP, which PHP emits
+ * as an inline script via the page hook. The config does not arrive through
+ * js_call_amd args because Moodle warns once that arg string exceeds 1024
+ * chars and the proofreader config is well over that.
+ *
  * @returns {Promise<void>}
  */
-export const init = async(config) => {
+export const init = async() => {
+    const config = window.WPROOFREADER_BOOTSTRAP;
     if (!config || typeof config !== 'object') {
         return;
     }

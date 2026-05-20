@@ -37,6 +37,9 @@ class output_callbacks {
     public static function before_standard_top_of_body_html_generation(
         before_standard_top_of_body_html_generation $hook
     ): void {
-        \local_wproofreader\local\page_injector::inject();
+        $html = \local_wproofreader\local\page_injector::inject();
+        if ($html !== '') {
+            $hook->add_html($html);
+        }
     }
 }
