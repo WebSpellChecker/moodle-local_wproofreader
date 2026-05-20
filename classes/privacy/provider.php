@@ -19,8 +19,6 @@ namespace local_wproofreader\privacy;
 use core_privacy\local\metadata\collection;
 use core_privacy\local\metadata\provider as metadata_provider;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Privacy provider for local_wproofreader.
  *
@@ -33,7 +31,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class provider implements metadata_provider {
-
     /**
      * Describe data sent to the WebSpellChecker service.
      *

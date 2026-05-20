@@ -18,8 +18,6 @@ namespace local_wproofreader\hook;
 
 use core\hook\output\before_standard_top_of_body_html_generation;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Hook callbacks that inject WProofreader assets into the page.
  *
@@ -28,7 +26,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class output_callbacks {
-
     /**
      * Inject the WProofreader AMD init at the top of the body.
      *

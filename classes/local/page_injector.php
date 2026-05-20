@@ -16,8 +16,6 @@
 
 namespace local_wproofreader\local;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Coordinates injection of the WProofreader bundle and AMD init call into the page.
  *
@@ -26,7 +24,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class page_injector {
-
     /**
      * Inject the WProofreader AMD init call into the current page when allowed.
      *

@@ -90,9 +90,13 @@ const attachToExisting = () => {
         return false;
     }
 
-    const editors = Array.isArray(window.tinymce.editors)
-        ? window.tinymce.editors
-        : (window.tinymce.editors ? Array.from(window.tinymce.editors) : []);
+    const raw = window.tinymce.editors;
+    let editors = [];
+    if (Array.isArray(raw)) {
+        editors = raw;
+    } else if (raw) {
+        editors = Array.from(raw);
+    }
 
     editors.forEach(hookEditor);
 

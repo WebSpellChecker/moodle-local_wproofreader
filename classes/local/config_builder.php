@@ -16,8 +16,6 @@
 
 namespace local_wproofreader\local;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Builds the configuration payload passed from PHP to the WProofreader JavaScript bundle.
  *
@@ -26,7 +24,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class config_builder {
-
     /** Free trial customer ID. */
     public const TRIAL_CUSTOMER_ID = '1:cma3h3-HTiyU3-JL08g4-SRyuS1-a9c0F3-kH6Cu-OlMHS-thcSV2-HlGmv3-YzRCN2-qrKY42-uPc';
 
