@@ -32,7 +32,7 @@ use core_privacy\local\metadata\provider as metadata_provider;
  * @copyright  2026 WebSpellChecker
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class provider implements null_provider, metadata_provider {
+class provider implements metadata_provider, null_provider {
     /**
      * Reason the plugin does not store any per-user data inside Moodle.
      *
