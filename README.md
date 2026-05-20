@@ -103,26 +103,9 @@ All settings live under *Site administration > Plugins > Local plugins > WProofr
 
 ## How it works
 
-1. On every page request, the `\core\hook\output\before_standard_top_of_body_html_generation`
-   hook fires. The plugin's callback runs `page_injector::inject()`, which:
-   * Checks `context_evaluator::should_enable()` against the current page's
-     context and the plugin settings.
-   * Builds the JS config via `config_builder::build()`.
-   * Calls `$PAGE->requires->js_call_amd('local_wproofreader/init', 'init', [$config])`.
-2. The AMD `init` module writes `window.WEBSPELLCHECKER_CONFIG`, then dynamically
-   loads `https://svc.webspellchecker.net/spellcheck31/wscbundle/wscbundle.js`.
-3. Once the bundle is ready, three environment helpers fan out:
-   * `environment_textarea` adds Moodle-specific exclusion classes so the bundle's
-     `autoSearch` skips code / CSS fields.
-   * `environment_atto` adds a `MutationObserver` safety net for Atto editors
-     created after the initial autoSearch pass.
-   * `environment_tinymce` waits for `window.tinymce`, then attaches a
-     WProofreader instance to each TinyMCE editor's iframe via
-     `editor.on('init', ...)`.
-4. On the plugin settings page, `settings_page.js` asks the bundle for its
-   supported languages and posts the result back through the
-   `local_wproofreader_save_languages` external function. The cached list is
-   then served by `language_catalog::options()` on the next settings page render.
+* On each page render, the plugin checks the per-context toggles, emits an inline bootstrap script with the proofreader config, and queues an AMD module to start.
+* The AMD module loads the WebSpellChecker bundle from `svc.webspellchecker.net` and attaches it to Atto, TinyMCE, and plain HTML textareas on the page.
+* The settings page refreshes the supported-language list from the service when opened, and caches it server-side for the next render.
 
 ## Privacy
 
