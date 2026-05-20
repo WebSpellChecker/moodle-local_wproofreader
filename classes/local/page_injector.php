@@ -26,30 +26,40 @@ namespace local_wproofreader\local;
 class page_injector {
     /**
      * Inject the WProofreader AMD init call into the current page when allowed.
+     *
+     * Returns an inline script tag that publishes the config as
+     * window.WPROOFREADER_BOOTSTRAP. PHP-to-JS data does not travel through
+     * the js_call_amd arg list because Moodle warns once that string exceeds
+     * 1024 chars, and the proofreader config is well over that.
+     *
+     * @return string HTML to insert at the top of the body, or empty string when disabled.
      */
-    public static function inject(): void {
+    public static function inject(): string {
         global $PAGE;
 
         if (defined('LOCAL_WPROOFREADER_INJECTED') && LOCAL_WPROOFREADER_INJECTED) {
-            return;
+            return '';
         }
 
         if (CLI_SCRIPT || AJAX_SCRIPT || WS_SERVER) {
-            return;
+            return '';
         }
 
         if (!isset($PAGE) || !($PAGE instanceof \moodle_page)) {
-            return;
+            return '';
         }
 
         if (!context_evaluator::should_enable($PAGE)) {
-            return;
+            return '';
         }
 
         $config = config_builder::build();
+        $bootstrap = json_encode($config, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
-        $PAGE->requires->js_call_amd('local_wproofreader/init', 'init', [$config]);
+        $PAGE->requires->js_call_amd('local_wproofreader/init', 'init');
 
         define('LOCAL_WPROOFREADER_INJECTED', true);
+
+        return '<script>window.WPROOFREADER_BOOTSTRAP = ' . $bootstrap . ';</script>';
     }
 }
