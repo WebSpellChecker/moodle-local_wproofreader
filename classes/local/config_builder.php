@@ -83,7 +83,7 @@ class config_builder {
             'settingsSections'  => $isfree
                 ? ['dictionaries', 'languages', 'general', 'options']
                 : ['options', 'languages', 'dictionaries', 'about', 'general'],
-            'disableOptionsStorage'          => $isfree ? ['autocomplete'] : [],
+            'disableOptionsStorage'          => self::disabled_options_storage(),
             'disableDictionariesPreferences' => $isfree,
             'actionItems' => $badgeenabled
                 ? ['addWord', 'ignoreAll', 'settings', 'toggle', 'proofreadDialog']
@@ -195,6 +195,36 @@ class config_builder {
         $stored = (string) get_config('local_wproofreader', 'slang');
 
         return $stored !== '' ? $stored : 'en_US';
+    }
+
+    /**
+     * Bundle option keys that must not be persisted in the browser's localStorage.
+     *
+     * Without this, the bundle remembers each user's per-session choices from
+     * the badge settings dialog and uses them on subsequent page loads, which
+     * means an admin who changes a default (for example the proofreading
+     * language or the style toggle) sees no effect on any browser that has
+     * previously interacted with the badge.
+     *
+     * Note: only per-user toggles appear here. The paid-tier capabilities
+     * themselves (enableGrammar, aiWritingAssistant, custom dictionaries
+     * via disableDictionariesPreferences) are unaffected by this list.
+     *
+     * @return array
+     */
+    private static function disabled_options_storage(): array {
+        return [
+            'lang',
+            'spellingSuggestions',
+            'grammarSuggestions',
+            'styleGuideSuggestions',
+            'autocorrect',
+            'autocomplete',
+            'ignoreAllCapsWords',
+            'ignoreDomainNames',
+            'ignoreWordsWithMixedCases',
+            'ignoreWordsWithNumbers',
+        ];
     }
 
     /**
