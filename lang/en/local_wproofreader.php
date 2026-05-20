@@ -63,6 +63,7 @@ $string['ignore_mixed_case_desc'] = 'Skip words that mix upper and lower case in
 $string['ignore_with_numbers'] = 'Ignore words with numbers';
 $string['ignore_with_numbers_desc'] = 'Skip words that contain one or more digits.';
 $string['pluginname'] = 'WProofreader';
+$string['privacy:metadata:no_user_data'] = 'WProofreader does not store any personal data inside Moodle. Editor text is processed by the external WebSpellChecker service; the transfer is declared below.';
 $string['privacy:metadata:wproofreader_service'] = 'WProofreader sends text from editor fields to the WebSpellChecker service for spell, grammar, and style checking.';
 $string['privacy:metadata:wproofreader_service:content'] = 'The text content the user is currently editing.';
 $string['privacy:metadata:wproofreader_service:language'] = 'The language code selected for proofreading.';

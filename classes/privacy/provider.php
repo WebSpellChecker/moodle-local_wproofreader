@@ -17,20 +17,31 @@
 namespace local_wproofreader\privacy;
 
 use core_privacy\local\metadata\collection;
+use core_privacy\local\metadata\null_provider;
 use core_privacy\local\metadata\provider as metadata_provider;
 
 /**
  * Privacy provider for local_wproofreader.
  *
- * The plugin does not store any personal data inside Moodle. It does, however,
- * transmit the text being edited to the WebSpellChecker service for analysis,
- * so we document that external transfer.
+ * The plugin does not store any personal data inside Moodle (implements
+ * null_provider to say so explicitly). It does transmit the text being
+ * edited to the WebSpellChecker service for analysis, so the external
+ * transfer is also declared via metadata_provider.
  *
  * @package    local_wproofreader
  * @copyright  2026 WebSpellChecker
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class provider implements metadata_provider {
+class provider implements null_provider, metadata_provider {
+    /**
+     * Reason the plugin does not store any per-user data inside Moodle.
+     *
+     * @return string Lang string identifier.
+     */
+    public static function get_reason(): string {
+        return 'privacy:metadata:no_user_data';
+    }
+
     /**
      * Describe data sent to the WebSpellChecker service.
      *
