@@ -173,7 +173,7 @@ if ($hassiteconfig) {
         'local_wproofreader/enable_on_quiz',
         get_string('enable_on_quiz', 'local_wproofreader'),
         get_string('enable_on_quiz_desc', 'local_wproofreader'),
-        1
+        0
     ));
 
     $settings->add(new admin_setting_configcheckbox(
