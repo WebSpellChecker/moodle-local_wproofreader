@@ -14,7 +14,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Shared loader for the WebSpellChecker bundle script.
+ * Shared loader for the WProofreader JS library script.
  *
  * Multiple AMD modules (page init and the settings page helper) may need the
  * bundle. This module memoizes the load so only one network request is made.
@@ -27,7 +27,7 @@
 let bundlePromise = null;
 
 /**
- * Load the WebSpellChecker bundle if it is not already present.
+ * Load the WProofreader JS library if it is not already present.
  *
  * @param {string} url Bundle URL.
  * @returns {Promise<void>}

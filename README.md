@@ -104,12 +104,12 @@ All settings live under *Site administration > Plugins > Local plugins > WProofr
 ## How it works
 
 * On each page render, the plugin checks the per-context toggles, emits an inline bootstrap script with the proofreader config, and queues an AMD module to start.
-* The AMD module loads the WebSpellChecker bundle from `svc.webspellchecker.net` and attaches it to Atto, TinyMCE, and plain HTML textareas on the page.
+* The AMD module loads the WProofreader JS library from `svc.webspellchecker.net` and attaches it to Atto, TinyMCE, and plain HTML textareas on the page.
 * The settings page refreshes the supported-language list from the service when opened, and caches it server-side for the next render.
 
 ## Privacy
 
-The plugin does not store personal data inside Moodle. Editor text is sent to
+The plugin doesn't store personal data inside Moodle. Editor text is sent to
 the WebSpellChecker service for analysis. See `classes/privacy/provider.php`
 for the metadata declaration shown to users via the privacy API.
 
@@ -127,8 +127,9 @@ installed on production sites without a Node.js toolchain.
 
 ## Support
 
-Visit [webspellchecker.com/contact-us](https://webspellchecker.com/contact-us/)
-for technical assistance.
+Report bugs or request features on the [GitHub issue tracker](https://github.com/WebSpellChecker/moodle-local_wproofreader/issues).
+
+For general technical assistance, visit [webspellchecker.com/contact-us](https://webspellchecker.com/contact-us/).
 
 ## License
 

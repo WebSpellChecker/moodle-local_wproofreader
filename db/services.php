@@ -27,7 +27,7 @@ defined('MOODLE_INTERNAL') || die();
 $functions = [
     'local_wproofreader_save_languages' => [
         'classname'   => 'local_wproofreader\\external\\save_languages',
-        'description' => 'Store the language list reported by the WebSpellChecker bundle for the settings dropdown.',
+        'description' => 'Store the language list reported by the WProofreader JS library for the settings dropdown.',
         'type'        => 'write',
         'ajax'        => true,
         'capabilities' => 'moodle/site:config',
