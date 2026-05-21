@@ -121,6 +121,8 @@ class config_builder {
             'servicePort'     => '443',
             'appType'         => 'moodle_plugin',
             'enableGrammar'   => !self::is_free_edition($customerid),
+            'autoOption'      => language_catalog::AUTO_OPTION,
+            'autoLabel'       => get_string('slang_auto', 'local_wproofreader'),
         ];
     }
 
@@ -194,7 +196,7 @@ class config_builder {
     public static function language(): string {
         $stored = (string) get_config('local_wproofreader', 'slang');
 
-        return $stored !== '' ? $stored : 'en_US';
+        return $stored !== '' ? $stored : language_catalog::AUTO_OPTION;
     }
 
     /**

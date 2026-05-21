@@ -32,19 +32,26 @@ class language_catalog {
     /** Config key where the cached service language list is stored. */
     public const CONFIG_KEY = 'cached_languages';
 
+    /** Synthetic option that asks the service to auto-detect the language. */
+    public const AUTO_OPTION = 'auto';
+
     /**
      * Options array suitable for admin_setting_configselect.
+     *
+     * The synthetic "auto" entry is always first; the rest comes from the
+     * cached service list when available, with a static fallback otherwise.
      *
      * @return array<string,string>
      */
     public static function options(): array {
+        $auto = [self::AUTO_OPTION => get_string('slang_auto', 'local_wproofreader')];
         $cached = self::read_cache();
 
         if (!empty($cached)) {
-            return $cached;
+            return $auto + $cached;
         }
 
-        return self::fallback();
+        return $auto + self::fallback();
     }
 
     /**

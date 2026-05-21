@@ -61,7 +61,7 @@ All settings live under *Site administration > Plugins > Local plugins > WProofr
 | Setting              | Default     | Description |
 |----------------------|-------------|-------------|
 | License key          | empty       | Paste the license key delivered with your Moodle Marketplace purchase. Leave empty to use the free trial. |
-| Default language     | English     | Initial proofreading language. The dropdown is refreshed live from the service when the settings page loads. |
+| Default language     | Auto        | Initial proofreading language. *Auto* lets the WebSpellChecker service detect the language from the content being checked; pick a specific language to pin it. The dropdown is refreshed live from the service when the settings page loads. |
 | Show badge button    | enabled     | Toggles the orange WProofreader badge on or off. |
 | Badge placement      | Page corner | Where to render the badge. "Page corner" shows a single floating badge in the bottom-right corner of the page that controls all editors. "Per editor" attaches a separate badge to each editor. |
 

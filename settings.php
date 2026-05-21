@@ -52,7 +52,7 @@ if ($hassiteconfig) {
         'local_wproofreader/slang',
         get_string('slang', 'local_wproofreader'),
         get_string('slang_desc', 'local_wproofreader'),
-        'en_US',
+        \local_wproofreader\local\language_catalog::AUTO_OPTION,
         $languages
     ));
 
