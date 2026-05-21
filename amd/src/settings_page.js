@@ -32,6 +32,9 @@ const SERVICE_READY_POLL_MS = 100;
 const LANGUAGE_CODE_PATTERN = /^[a-zA-Z]{2,3}(_[a-zA-Z]{2,4})?$/;
 const DROPDOWN_SELECTOR = 'select[name="s_local_wproofreader_slang"]';
 
+let autoOption = null;
+let autoLabel = null;
+
 const waitForService = () => new Promise((resolve) => {
     const start = Date.now();
     const tick = () => {
@@ -98,6 +101,16 @@ const updateLanguageDropdown = (result) => {
         select.removeChild(select.firstChild);
     }
 
+    if (autoOption && autoLabel) {
+        const option = document.createElement('option');
+        option.value = autoOption;
+        option.textContent = autoLabel;
+        if (currentValue === autoOption) {
+            option.selected = true;
+        }
+        select.appendChild(option);
+    }
+
     codes.forEach((code) => {
         const option = document.createElement('option');
         option.value = code;
@@ -119,6 +132,9 @@ export const init = async(config) => {
     if (!config || !config.bundleUrl) {
         return;
     }
+
+    autoOption = config.autoOption || null;
+    autoLabel = config.autoLabel || null;
 
     await loadBundle(config.bundleUrl);
 
