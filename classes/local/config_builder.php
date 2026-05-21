@@ -86,8 +86,8 @@ class config_builder {
             'disableOptionsStorage'          => self::disabled_options_storage(),
             'disableDictionariesPreferences' => $isfree,
             'actionItems' => $badgeenabled
-                ? ['addWord', 'ignoreAll', 'settings', 'toggle', 'proofreadDialog']
-                : ['addWord', 'ignoreAll', 'settings', 'proofreadDialog'],
+                ? ['addWord', 'ignoreAll', 'toggle', 'proofreadDialog']
+                : ['addWord', 'ignoreAll', 'proofreadDialog'],
             'disableAutoSearchIn' => self::excluded_selectors(),
         ];
 
