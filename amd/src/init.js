@@ -16,7 +16,7 @@
 /**
  * WProofreader main entry point.
  *
- * Applies global configuration, dynamically loads the WebSpellChecker bundle,
+ * Applies global configuration, dynamically loads the WProofreader JS library,
  * and dispatches to the editor-specific environments once the bundle is ready.
  *
  * @module     local_wproofreader/init
