@@ -24,8 +24,8 @@ namespace local_wproofreader\local;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class config_builder {
-    /** Free trial customer ID. */
-    public const TRIAL_CUSTOMER_ID = '1:cma3h3-HTiyU3-JL08g4-SRyuS1-a9c0F3-kH6Cu-OlMHS-thcSV2-HlGmv3-YzRCN2-qrKY42-uPc';
+    /** Free tier customer ID. */
+    public const TRIAL_CUSTOMER_ID = 'yDxiCIre3y6k39z';
 
     /** Default service host. */
     public const SERVICE_HOST = 'svc.webspellchecker.net';
@@ -44,7 +44,7 @@ class config_builder {
         $badgeenabled = self::is_badge_enabled();
 
         $spelling     = self::feature_enabled('enable_spelling', true);
-        $grammar      = self::feature_enabled('enable_grammar', true) && !$isfree;
+        $grammar      = self::feature_enabled('enable_grammar', true);
         $style        = self::feature_enabled('enable_style', true);
         $autocorrect  = self::feature_enabled('enable_autocorrect', false);
         $autocomplete = self::feature_enabled('enable_autocomplete', false);
@@ -71,7 +71,7 @@ class config_builder {
             'globalBadge'       => self::is_page_corner_badge(),
             'compactBadge'      => true,
             'autocomplete'      => $autocomplete,
-            'allSuggestionsMode' => true,
+            'allSuggestionsMode' => false,
             'spellingSuggestions'   => $spelling,
             'grammarSuggestions'    => $grammar,
             'styleGuideSuggestions' => $style,
@@ -120,7 +120,7 @@ class config_builder {
             'servicePath'     => 'api',
             'servicePort'     => '443',
             'appType'         => 'moodle_plugin',
-            'enableGrammar'   => !self::is_free_edition($customerid),
+            'enableGrammar'   => self::feature_enabled('enable_grammar', true),
             'autoOption'      => language_catalog::AUTO_OPTION,
             'autoLabel'       => get_string('slang_auto', 'local_wproofreader'),
         ];
@@ -138,7 +138,7 @@ class config_builder {
     }
 
     /**
-     * Whether the active customer ID is the bundled free trial key.
+     * Whether the active customer ID is the bundled free version key.
      *
      * @param string|null $customerid Optional already-resolved customer ID.
      * @return bool

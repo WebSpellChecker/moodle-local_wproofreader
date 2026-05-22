@@ -8,7 +8,7 @@ and plain HTML textareas, with no per-editor configuration required.
 
 * Real-time spell and grammar checking as users type
 * Multilanguage support, with the language list refreshed from the WebSpellChecker service
-* Free trial out of the box. Purchase through Moodle Marketplace to unlock grammar checking and the AI writing assistant
+* Free version out of the box, limited to 10,000 words a day. Purchase through Moodle Marketplace to unlock unlimited usage, grammar checking, and the AI writing assistant
 * Granular per-context toggles (courses, categories, user profiles, quizzes, site administration, public pages)
 
 ## External service
@@ -20,11 +20,12 @@ assistant all depend on this service. Without network access to the service,
 the plugin loads no proofreading UI and editors keep their default Moodle
 behaviour.
 
-The plugin ships with a built-in free trial that enables spelling and style
-checks. Grammar checking and the AI writing assistant require a paid license
-obtained through Moodle Marketplace. After purchase, paste the license key
-from your Marketplace receipt into *Site administration > Plugins > Local
-plugins > WProofreader > License key*.
+The plugin ships with a built-in free version that enables basic spelling and style
+checks, with a usage cap of 10,000 words a day across the site. Unlimited grammar checking and 
+the AI writing assistant require a paid license obtained
+through Moodle Marketplace. After purchase, paste the license key from your
+Marketplace receipt into *Site administration > Plugins > Local plugins >
+WProofreader > License key*.
 
 ## Supported Moodle versions
 
@@ -60,7 +61,7 @@ All settings live under *Site administration > Plugins > Local plugins > WProofr
 
 | Setting              | Default     | Description |
 |----------------------|-------------|-------------|
-| License key          | empty       | Paste the license key delivered with your Moodle Marketplace purchase. Leave empty to use the free trial. |
+| License key          | empty       | Paste the license key delivered with your Moodle Marketplace purchase. Leave empty to use the free version. |
 | Default language     | Auto        | Initial proofreading language. *Auto* lets the WebSpellChecker service detect the language from the content being checked; pick a specific language to pin it. The dropdown is refreshed live from the service when the settings page loads. |
 | Show badge button    | enabled     | Toggles the orange WProofreader badge on or off. |
 | Badge placement      | Page corner | Where to render the badge. "Page corner" shows a single floating badge in the bottom-right corner of the page that controls all editors. "Per editor" attaches a separate badge to each editor. |
@@ -70,9 +71,11 @@ All settings live under *Site administration > Plugins > Local plugins > WProofr
 | Setting              | Default   | Maps to (bundle keys) |
 |----------------------|-----------|------------------------|
 | Spelling             | enabled   | `spellingSuggestions` |
+| Grammar              | enabled   | `enableGrammar` + `grammarSuggestions` |
 | Style                | enabled   | `styleGuideSuggestions` |
 | Autocorrect          | disabled  | `autocorrect` |
 | Text autocomplete    | disabled  | `autocomplete` |
+| AI writing assistant | enabled   | `aiWritingAssistant` (paid only) |
 
 ### Spelling ignore options
 
@@ -82,13 +85,6 @@ All settings live under *Site administration > Plugins > Local plugins > WProofr
 | Ignore domain names              | enabled   | `ignoreDomainNames`         |
 | Ignore words with mixed case     | enabled   | `ignoreWordsWithMixedCases` |
 | Ignore words with numbers        | enabled   | `ignoreWordsWithNumbers`    |
-
-### Advanced features
-
-| Setting              | Default   | Maps to (bundle keys) |
-|----------------------|-----------|------------------------|
-| Grammar              | enabled   | `enableGrammar` + `grammarSuggestions` (forced off on free trial) |
-| AI writing assistant | enabled   | `aiWritingAssistant` (forced off on free trial) |
 
 ### Where to enable WProofreader
 

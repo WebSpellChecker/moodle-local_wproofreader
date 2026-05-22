@@ -82,10 +82,12 @@ if ($hassiteconfig) {
     ));
 
     $featuretoggles = [
-        'enable_spelling'     => 1,
-        'enable_style'        => 1,
-        'enable_autocorrect'  => 0,
-        'enable_autocomplete' => 0,
+        'enable_spelling'             => 1,
+        'enable_grammar'              => 1,
+        'enable_style'                => 1,
+        'enable_autocorrect'          => 0,
+        'enable_autocomplete'         => 0,
+        'enable_ai_writing_assistant' => 1,
     ];
 
     foreach ($featuretoggles as $name => $default) {
@@ -112,27 +114,6 @@ if ($hassiteconfig) {
     ];
 
     foreach ($ignoretoggles as $name => $default) {
-        $settings->add(new admin_setting_configcheckbox(
-            'local_wproofreader/' . $name,
-            get_string($name, 'local_wproofreader'),
-            get_string($name . '_desc', 'local_wproofreader'),
-            $default
-        ));
-    }
-
-    // Advanced features section (paid-only).
-    $settings->add(new admin_setting_heading(
-        'local_wproofreader/heading_advanced',
-        get_string('settings_advanced', 'local_wproofreader'),
-        get_string('settings_advanced_desc', 'local_wproofreader')
-    ));
-
-    $advancedtoggles = [
-        'enable_grammar'              => 1,
-        'enable_ai_writing_assistant' => 1,
-    ];
-
-    foreach ($advancedtoggles as $name => $default) {
         $settings->add(new admin_setting_configcheckbox(
             'local_wproofreader/' . $name,
             get_string($name, 'local_wproofreader'),
