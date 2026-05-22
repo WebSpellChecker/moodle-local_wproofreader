@@ -8,7 +8,7 @@ and plain HTML textareas, with no per-editor configuration required.
 
 * Real-time spell and grammar checking as users type
 * Multilanguage support, with the language list refreshed from the WebSpellChecker service
-* Free version out of the box, limited to 10,000 words a day. Purchase through Moodle Marketplace to unlock unlimited usage and the AI writing assistant
+* Free version out of the box, limited to 10,000 words a day. Purchase through Moodle Marketplace to extend the usage and unlock additional features
 * Granular per-context toggles (courses, categories, user profiles, quizzes, site administration, public pages)
 
 ## External service
@@ -20,11 +20,15 @@ assistant all depend on this service. Without network access to the service,
 the plugin loads no proofreading UI and editors keep their default Moodle
 behaviour.
 
+## Free and paid versions
+
 The plugin ships with a built-in free version that enables basic spelling and style
-checks, with a usage cap of 10,000 words a day across the site. Unlimited grammar checking and 
-the AI writing assistant require a paid license obtained
-through Moodle Marketplace. After purchase, paste the license key from your
-Marketplace receipt into *Site administration > Plugins > Local plugins >
+checks, with a usage cap of 10,000 words a day across the site.
+
+Enhanced grammar checking, the AI writing assistant, lifted daily usage limits,
+access to custom dictionaries, and style-guide functionality require a paid licence
+obtained through Moodle Marketplace. After purchase, paste the licence key from
+your Marketplace receipt into *Site administration > Plugins > Local plugins >
 WProofreader > License key*.
 
 ## Supported Moodle versions
