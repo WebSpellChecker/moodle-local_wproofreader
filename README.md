@@ -8,7 +8,7 @@ and plain HTML textareas, with no per-editor configuration required.
 
 * Real-time spell and grammar checking as users type
 * Multilanguage support, with the language list refreshed from the WebSpellChecker service
-* Free version out of the box, limited to 10,000 words a day. Purchase through Moodle Marketplace to extend the usage
+* Free version out of the box, limited to 10,000 words a day. Purchase through Moodle Marketplace to extend the usage and unlock additional features
 * Granular per-context toggles (courses, categories, user profiles, quizzes, site administration, public pages)
 
 ## External service
@@ -25,7 +25,7 @@ behaviour.
 The plugin ships with a built-in free version that enables basic spelling and style
 checks, with a usage cap of 10,000 words a day across the site.
 
-Extended grammar checking, the AI writing assistant, lifted daily usage limits,
+Enhanced grammar checking, the AI writing assistant, lifted daily usage limits,
 access to custom dictionaries, and style-guide functionality require a paid licence
 obtained through Moodle Marketplace. After purchase, paste the licence key from
 your Marketplace receipt into *Site administration > Plugins > Local plugins >
