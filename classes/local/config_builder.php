@@ -25,7 +25,7 @@ namespace local_wproofreader\local;
  */
 class config_builder {
     /** Free tier customer ID. */
-    public const TRIAL_CUSTOMER_ID = 'yDxiCIre3y6k39z';
+    public const TRIAL_CUSTOMER_ID = '1:cma3h3-HTiyU3-JL08g4-SRyuS1-a9c0F3-kH6Cu-OlMHS-thcSV2-HlGmv3-YzRCN2-qrKY42-uPc';
 
     /** Default service host. */
     public const SERVICE_HOST = 'svc.webspellchecker.net';

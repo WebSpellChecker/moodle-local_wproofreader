@@ -8,7 +8,7 @@ and plain HTML textareas, with no per-editor configuration required.
 
 * Real-time spell and grammar checking as users type
 * Multilanguage support, with the language list refreshed from the WebSpellChecker service
-* Free version out of the box, limited to 10,000 words a day. Purchase through Moodle Marketplace to unlock unlimited usage and the AI writing assistant
+* Free version out of the box, limited to 10,000 words a day. Purchase through Moodle Marketplace to extend the usage and the AI writing assistant
 * Granular per-context toggles (courses, categories, user profiles, quizzes, site administration, public pages)
 
 ## External service
