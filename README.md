@@ -20,11 +20,15 @@ assistant all depend on this service. Without network access to the service,
 the plugin loads no proofreading UI and editors keep their default Moodle
 behaviour.
 
+## Free and paid versions
+
 The plugin ships with a built-in free version that enables basic spelling and style
-checks, with a usage cap of 10,000 words a day across the site. Unlimited grammar checking and 
-the AI writing assistant require a paid license obtained
-through Moodle Marketplace. After purchase, paste the license key from your
-Marketplace receipt into *Site administration > Plugins > Local plugins >
+checks, with a usage cap of 10,000 words a day across the site.
+
+Extended grammar checking, the AI writing assistant, lifted daily usage limits,
+access to custom dictionaries, and style-guide functionality require a paid licence
+obtained through Moodle Marketplace. After purchase, paste the licence key from
+your Marketplace receipt into *Site administration > Plugins > Local plugins >
 WProofreader > License key*.
 
 ## Supported Moodle versions
