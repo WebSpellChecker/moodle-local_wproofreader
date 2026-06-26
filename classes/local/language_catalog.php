@@ -44,7 +44,7 @@ class language_catalog {
      * @return array<string,string>
      */
     public static function options(): array {
-        $auto = [self::AUTO_OPTION => get_string('slang_auto', 'local_wproofreader')];
+        $auto = [self::AUTO_OPTION => get_string('lang_auto', 'local_wproofreader')];
         $cached = self::read_cache();
 
         if (!empty($cached)) {

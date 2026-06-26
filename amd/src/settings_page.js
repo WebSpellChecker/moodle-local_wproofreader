@@ -30,7 +30,7 @@ import {loadBundle} from 'local_wproofreader/bundle_loader';
 const SERVICE_READY_TIMEOUT_MS = 10000;
 const SERVICE_READY_POLL_MS = 100;
 const LANGUAGE_CODE_PATTERN = /^[a-zA-Z]{2,3}(_[a-zA-Z]{2,4})?$/;
-const DROPDOWN_SELECTOR = 'select[name="s_local_wproofreader_slang"]';
+const DROPDOWN_SELECTOR = 'select[name="s_local_wproofreader_lang"]';
 
 let autoOption = null;
 let autoLabel = null;

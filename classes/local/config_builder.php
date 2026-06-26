@@ -24,8 +24,8 @@ namespace local_wproofreader\local;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class config_builder {
-    /** Free tier customer ID. */
-    public const TRIAL_CUSTOMER_ID = 'yDxiCIre3y6k39z';
+    /** Free tier service ID. */
+    public const TRIAL_SERVICE_ID = 'yDxiCIre3y6k39z';
 
     /** Default service host. */
     public const SERVICE_HOST = 'svc.webspellchecker.net';
@@ -39,8 +39,8 @@ class config_builder {
      * @return array
      */
     public static function build(): array {
-        $customerid = self::customer_id();
-        $isfree = self::is_free_edition($customerid);
+        $serviceid = self::service_id();
+        $isfree = self::is_free_edition($serviceid);
         $badgeenabled = self::is_badge_enabled();
 
         $spelling     = self::feature_enabled('enable_spelling', true);
@@ -56,7 +56,7 @@ class config_builder {
         $ignorewithnums   = self::feature_enabled('ignore_with_numbers', true);
 
         $config = [
-            'serviceId'         => $customerid,
+            'serviceId'         => $serviceid,
             'lang'              => self::language(),
             'bundleUrl'         => self::BUNDLE_URL,
             'serviceProtocol'   => 'https',
@@ -109,10 +109,10 @@ class config_builder {
      * @return array
      */
     public static function settings_page_config(): array {
-        $customerid = self::customer_id();
+        $serviceid = self::service_id();
 
         return [
-            'serviceId'       => $customerid,
+            'serviceId'       => $serviceid,
             'lang'            => self::language(),
             'bundleUrl'       => self::BUNDLE_URL,
             'serviceProtocol' => 'https',
@@ -122,31 +122,31 @@ class config_builder {
             'appType'         => 'moodle_plugin',
             'enableGrammar'   => self::feature_enabled('enable_grammar', true),
             'autoOption'      => language_catalog::AUTO_OPTION,
-            'autoLabel'       => get_string('slang_auto', 'local_wproofreader'),
+            'autoLabel'       => get_string('lang_auto', 'local_wproofreader'),
         ];
     }
 
     /**
-     * Resolve the customer ID, falling back to the trial key.
+     * Resolve the service ID, falling back to the trial key.
      *
      * @return string
      */
-    public static function customer_id(): string {
-        $stored = trim((string) get_config('local_wproofreader', 'customer_id'));
+    public static function service_id(): string {
+        $stored = trim((string) get_config('local_wproofreader', 'service_id'));
 
-        return $stored !== '' ? $stored : self::TRIAL_CUSTOMER_ID;
+        return $stored !== '' ? $stored : self::TRIAL_SERVICE_ID;
     }
 
     /**
-     * Whether the active customer ID is the bundled free version key.
+     * Whether the active service ID is the bundled free version key.
      *
-     * @param string|null $customerid Optional already-resolved customer ID.
+     * @param string|null $serviceid Optional already-resolved service ID.
      * @return bool
      */
-    public static function is_free_edition(?string $customerid = null): bool {
-        $customerid = $customerid ?? self::customer_id();
+    public static function is_free_edition(?string $serviceid = null): bool {
+        $serviceid = $serviceid ?? self::service_id();
 
-        return $customerid === self::TRIAL_CUSTOMER_ID;
+        return $serviceid === self::TRIAL_SERVICE_ID;
     }
 
     /**
@@ -194,7 +194,7 @@ class config_builder {
      * @return string
      */
     public static function language(): string {
-        $stored = (string) get_config('local_wproofreader', 'slang');
+        $stored = (string) get_config('local_wproofreader', 'lang');
 
         return $stored !== '' ? $stored : language_catalog::AUTO_OPTION;
     }
