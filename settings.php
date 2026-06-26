@@ -39,9 +39,9 @@ if ($hassiteconfig) {
     ));
 
     $settings->add(new admin_setting_configtext(
-        'local_wproofreader/customer_id',
-        get_string('customer_id', 'local_wproofreader'),
-        get_string('customer_id_desc', 'local_wproofreader'),
+        'local_wproofreader/service_id',
+        get_string('service_id', 'local_wproofreader'),
+        get_string('service_id_desc', 'local_wproofreader'),
         '',
         PARAM_TEXT,
         80
@@ -49,9 +49,9 @@ if ($hassiteconfig) {
 
     $languages = \local_wproofreader\local\language_catalog::options();
     $settings->add(new admin_setting_configselect(
-        'local_wproofreader/slang',
-        get_string('slang', 'local_wproofreader'),
-        get_string('slang_desc', 'local_wproofreader'),
+        'local_wproofreader/lang',
+        get_string('lang', 'local_wproofreader'),
+        get_string('lang_desc', 'local_wproofreader'),
         \local_wproofreader\local\language_catalog::AUTO_OPTION,
         $languages
     ));

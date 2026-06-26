@@ -16,45 +16,36 @@
 /**
  * TinyMCE 6 editor integration.
  *
- * Each TinyMCE editor renders its editable content inside an `<iframe>`, so the
- * bundle's autoSearch in the main document cannot reach it. For every editor
- * we wait for its init event, then attach a WProofreader instance using the
- * iframe element as container; the bundle is responsible for reaching into
- * the iframe document from there.
- *
  * @module     local_wproofreader/environment_tinymce
  * @copyright  2026 WebSpellChecker
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+const SELECTOR = 'iframe.tox-edit-area__iframe';
 const INSTANCE_ATTR = 'data-wsc-instance';
-const MAX_ATTEMPTS = 50;
-const ATTEMPT_DELAY = 100;
 
-let listening = false;
-let attempts = 0;
+let observer = null;
+let hookInstalled = false;
 
-const markIframe = (iframe) => {
-    const body = iframe.contentDocument && iframe.contentDocument.body;
-    if (body) {
-        body.setAttribute(INSTANCE_ATTR, '1');
+const findIframes = () => Array.from(document.querySelectorAll(SELECTOR));
+
+const isMarked = (iframe) => iframe.hasAttribute(INSTANCE_ATTR);
+const mark = (iframe) => iframe.setAttribute(INSTANCE_ATTR, '1');
+const unmark = (iframe) => iframe.removeAttribute(INSTANCE_ATTR);
+
+
+const findEditor = (iframe) => {
+    if (!window.tinymce || typeof window.tinymce.get !== 'function') {
+        return null;
     }
+    const editors = window.tinymce.get() || [];
+    return editors.find((editor) => editor && editor.iframeElement === iframe) || null;
 };
 
-const hasInstance = (iframe) => {
-    const body = iframe.contentDocument && iframe.contentDocument.body;
-    return Boolean(body && body.hasAttribute(INSTANCE_ATTR));
-};
-
-const attachTo = (editor) => {
-    if (!editor || !window.WEBSPELLCHECKER || !window.WEBSPELLCHECKER_CONFIG) {
-        return;
-    }
-
-    const iframe = editor.iframeElement
-        || (editor.getContentAreaContainer && editor.getContentAreaContainer().querySelector('iframe'));
-
-    if (!iframe || hasInstance(iframe)) {
+const initInstance = (iframe) => {
+    const doc = iframe.contentDocument;
+    if (!doc || !doc.body) {
+        unmark(iframe);
         return;
     }
 
@@ -62,71 +53,80 @@ const attachTo = (editor) => {
         window.WEBSPELLCHECKER.init(Object.assign({}, window.WEBSPELLCHECKER_CONFIG, {
             container: iframe,
         }));
-        markIframe(iframe);
     } catch (e) {
+        unmark(iframe);
         if (window.console && window.console.warn) {
             window.console.warn('WProofreader: failed to attach to TinyMCE editor', e);
         }
     }
 };
 
-const hookEditor = (editor) => {
-    if (!editor) {
+/**
+ * Decide when to attach to a single iframe: now, or on the editor's init event.
+ *
+ * @param {HTMLIFrameElement} iframe
+ */
+const attach = (iframe) => {
+    if (!iframe || isMarked(iframe) || !window.WEBSPELLCHECKER || !window.WEBSPELLCHECKER_CONFIG) {
         return;
     }
 
-    if (editor.initialized) {
-        attachTo(editor);
+    // Mark up front so repeated observer fires do not register duplicate hooks;
+    // initInstance unmarks again if the editor turns out not to be ready.
+    mark(iframe);
+
+    const editor = findEditor(iframe);
+    if (editor && !editor.initialized && typeof editor.on === 'function') {
+        editor.on('init', () => initInstance(iframe));
         return;
     }
 
-    if (typeof editor.on === 'function') {
-        editor.on('init', () => attachTo(editor));
-    }
+    initInstance(iframe);
 };
 
-const attachToExisting = () => {
-    if (!window.tinymce) {
-        return false;
+const scanAndInit = () => {
+    findIframes().forEach(attach);
+};
+
+const startObserver = () => {
+    if (observer || typeof MutationObserver === 'undefined') {
+        return;
     }
 
-    const raw = window.tinymce.editors;
-    let editors = [];
-    if (Array.isArray(raw)) {
-        editors = raw;
-    } else if (raw) {
-        editors = Array.from(raw);
+    observer = new MutationObserver(() => {
+        scanAndInit();
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+    });
+};
+
+const hookBundleReady = () => {
+    if (hookInstalled) {
+        return;
     }
+    hookInstalled = true;
 
-    editors.forEach(hookEditor);
-
-    if (!listening && typeof window.tinymce.on === 'function') {
-        listening = true;
-        window.tinymce.on('AddEditor', (event) => {
-            if (event && event.editor) {
-                hookEditor(event.editor);
+    const previous = window.webspellcheckerAlreadyLoaded;
+    window.webspellcheckerAlreadyLoaded = function() {
+        if (typeof previous === 'function') {
+            try {
+                previous.apply(this, arguments);
+            } catch (e) {
+                // Preserve original callback contract on failure.
             }
-        });
-    }
-
-    return true;
-};
-
-const poll = () => {
-    attempts++;
-
-    if (attachToExisting()) {
-        return;
-    }
-
-    if (attempts < MAX_ATTEMPTS) {
-        setTimeout(poll, ATTEMPT_DELAY);
-    }
+        }
+        scanAndInit();
+    };
 };
 
 /**
  * Initialize the TinyMCE environment.
  */
 export const init = () => {
-    poll();
+    hookBundleReady();
+    startObserver();
+    scanAndInit();
 };

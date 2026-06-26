@@ -16,13 +16,6 @@
 /**
  * Plain HTML textarea integration.
  *
- * Moodle exposes textareas in many places where neither Atto nor TinyMCE is
- * active: filter settings forms, the file picker, the "plain text area" editor
- * choice, and so on. The bundle's autoSearch already picks these up; this
- * module only filters out textareas where proofreading would be inappropriate
- * (raw HTML, CSS, JavaScript snippets) by tagging them with a class the
- * disableAutoSearchIn list looks for.
- *
  * @module     local_wproofreader/environment_textarea
  * @copyright  2026 WebSpellChecker
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
