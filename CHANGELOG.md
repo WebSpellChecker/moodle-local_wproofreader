@@ -2,6 +2,44 @@
 
 All notable changes to the WProofreader plugin for Moodle are documented here.
 
+## 1.0.8 (2026-06-26)
+
+* Updated plugin versioning.
+
+## 1.0.7 (2026-06-26)
+
+* Fixed multiple WProofreader instances initializing on a single TinyMCE editor.
+* Renamed the `customer_id` setting to `service_id` and the `slang` setting to `lang` to align with the service configuration keys.
+
+## 1.0.6 (2026-05-22)
+
+* Updated plugin versioning.
+
+## 1.0.5 (2026-05-22)
+
+* Improved spelling in the README and language files.
+
+## 1.0.4 (2026-05-22)
+
+* Updated plugin versioning.
+
+## 1.0.3 (2026-05-22)
+
+* Corrected spelling in the README and language file, and tidied the documentation.
+
+## 1.0.2 (2026-05-21)
+
+* Added "Auto" as the default proofreading language.
+* Removed the user-facing settings entry from the badge dropdown.
+* Polished README wording and naming.
+
+## 1.0.1 (2026-05-20)
+
+* Added a null privacy provider so the privacy registry stops warning.
+* Relabeled the "enable on system pages" toggle to match its actual scope.
+* Detected the quiz module via pagetype when `$PAGE->cm` is null.
+* Stopped the bundle from persisting per-user toggles in localStorage.
+
 ## 1.0.0 (2026-05-19)
 
 Initial release.
