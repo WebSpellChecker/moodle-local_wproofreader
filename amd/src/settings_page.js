@@ -154,7 +154,7 @@ export const init = async(config) => {
             serviceId: config.serviceId,
             lang: config.lang,
             enableGrammar: config.enableGrammar === true || config.enableGrammar === 'true',
-            appType: config.appType || 'moodle_plugin',
+            appType: config.appType,
         });
     } catch (e) {
         return;

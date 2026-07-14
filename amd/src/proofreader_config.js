@@ -49,7 +49,7 @@ export const apply = (config) => {
 
     window.WEBSPELLCHECKER_CONFIG = {
         autoSearch: toBoolean(config.autoSearch, true),
-        appType: config.appType || 'moodle_plugin',
+        appType: config.appType,
         serviceProtocol: config.serviceProtocol || 'https',
         serviceHost: config.serviceHost || 'svc.webspellchecker.net',
         servicePath: config.servicePath || 'api',

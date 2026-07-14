@@ -2,6 +2,10 @@
 
 All notable changes to the WProofreader plugin for Moodle are documented here.
 
+## 1.0.9 (2026-07-14)
+
+* Changed the integration appType sent to the WebSpellChecker service to `wpr_moodle`.
+
 ## 1.0.8 (2026-06-26)
 
 * Updated plugin versioning.
