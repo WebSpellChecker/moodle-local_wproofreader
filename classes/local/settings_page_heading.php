@@ -33,6 +33,8 @@ use admin_setting_heading;
  */
 class settings_page_heading extends admin_setting_heading {
     /**
+     * Generates the HTML for the heading and queues the settings-page AMD module.
+     *
      * @param mixed $data
      * @param string $query
      * @return string
