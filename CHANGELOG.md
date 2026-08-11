@@ -2,6 +2,10 @@
 
 All notable changes to the WProofreader plugin for Moodle are documented here.
 
+## 1.0.10 (2026-08-11)
+
+* Added warning messages for an exceeded usage limit and an invalid license key on the settings page.
+
 ## 1.0.9 (2026-07-14)
 
 * Changed the integration appType sent to the WebSpellChecker service to `wpr_moodle`.
