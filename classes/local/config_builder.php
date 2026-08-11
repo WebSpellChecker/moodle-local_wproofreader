@@ -123,6 +123,8 @@ class config_builder {
             'enableGrammar'   => self::feature_enabled('enable_grammar', true),
             'autoOption'      => language_catalog::AUTO_OPTION,
             'autoLabel'       => get_string('lang_auto', 'local_wproofreader'),
+            'usageLimitExceededMessage' => get_string('usage_limit_exceeded', 'local_wproofreader'),
+            'serviceIdInvalidMessage'   => get_string('service_id_invalid', 'local_wproofreader'),
         ];
     }
 

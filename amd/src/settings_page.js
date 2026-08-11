@@ -169,8 +169,26 @@ export const init = async(config) => {
             updateLanguageDropdown(result);
             sendLanguagesToServer(result);
         },
-        error: () => {
-            // Bundle failure on the settings page is silent; the static fallback language list keeps the dropdown usable.
+        error: (err) => {
+            if (!err || err.status !== 403) {
+                // Otherwise silent; the static fallback language list keeps the dropdown usable.
+                return;
+            }
+
+            if (err.message && /quota/i.test(err.message) && config.usageLimitExceededMessage) {
+                Notification.addNotification({
+                    message: config.usageLimitExceededMessage,
+                    type: 'warning',
+                });
+                return;
+            }
+
+            if (config.serviceIdInvalidMessage) {
+                Notification.addNotification({
+                    message: config.serviceIdInvalidMessage,
+                    type: 'warning',
+                });
+            }
         },
     });
 };
