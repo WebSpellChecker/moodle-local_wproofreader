@@ -21,17 +21,20 @@
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+import {notifyField} from 'local_wproofreader/notify';
+import {ATTACHED_ATTR} from 'local_wproofreader/constants';
+
 const SELECTOR = 'iframe.tox-edit-area__iframe';
-const INSTANCE_ATTR = 'data-wsc-instance';
 
 let observer = null;
 let hookInstalled = false;
+let attachErrorMessage = null;
 
 const findIframes = () => Array.from(document.querySelectorAll(SELECTOR));
 
-const isMarked = (iframe) => iframe.hasAttribute(INSTANCE_ATTR);
-const mark = (iframe) => iframe.setAttribute(INSTANCE_ATTR, '1');
-const unmark = (iframe) => iframe.removeAttribute(INSTANCE_ATTR);
+const isMarked = (iframe) => iframe.hasAttribute(ATTACHED_ATTR);
+const mark = (iframe) => iframe.setAttribute(ATTACHED_ATTR, '1');
+const unmark = (iframe) => iframe.removeAttribute(ATTACHED_ATTR);
 
 
 const findEditor = (iframe) => {
@@ -58,6 +61,7 @@ const initInstance = (iframe) => {
         if (window.console && window.console.warn) {
             window.console.warn('WProofreader: failed to attach to TinyMCE editor', e);
         }
+        notifyField(iframe, attachErrorMessage);
     }
 };
 
@@ -124,8 +128,11 @@ const hookBundleReady = () => {
 
 /**
  * Initialize the TinyMCE environment.
+ *
+ * @param {Object} config Page configuration.
  */
-export const init = () => {
+export const init = (config) => {
+    attachErrorMessage = config && config.editorAttachErrorMessage || null;
     hookBundleReady();
     startObserver();
     scanAndInit();

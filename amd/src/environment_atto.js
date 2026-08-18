@@ -21,14 +21,17 @@
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+import {notifyField} from 'local_wproofreader/notify';
+import {ATTACHED_ATTR} from 'local_wproofreader/constants';
+
 const SELECTORS = [
     '.editor_atto_content[contenteditable="true"]',
     '.editor_atto [contenteditable="true"]',
 ];
-const INSTANCE_ATTR = 'data-wsc-instance';
 
 let observer = null;
 let hookInstalled = false;
+let attachErrorMessage = null;
 
 const findEditors = () => {
     const seen = new Set();
@@ -38,22 +41,23 @@ const findEditors = () => {
     return Array.from(seen);
 };
 
-const isInstanceCreated = (element) => element.hasAttribute(INSTANCE_ATTR);
+const isInstanceCreated = (element) => element.hasAttribute(ATTACHED_ATTR);
 
 const createInstance = (element) => {
     if (!element || !element.isContentEditable || isInstanceCreated(element) || !window.WEBSPELLCHECKER) {
         return;
     }
 
-    element.setAttribute(INSTANCE_ATTR, '1');
+    element.setAttribute(ATTACHED_ATTR, '1');
 
     try {
         window.WEBSPELLCHECKER.init({container: element});
     } catch (e) {
-        element.removeAttribute(INSTANCE_ATTR);
+        element.removeAttribute(ATTACHED_ATTR);
         if (window.console && window.console.warn) {
             window.console.warn('WProofreader: failed to attach to Atto editor', e);
         }
+        notifyField(element, attachErrorMessage);
     }
 };
 
@@ -99,8 +103,11 @@ const hookBundleReady = () => {
 
 /**
  * Initialize the Atto editor environment.
+ *
+ * @param {Object} config Page configuration.
  */
-export const init = () => {
+export const init = (config) => {
+    attachErrorMessage = config && config.editorAttachErrorMessage || null;
     hookBundleReady();
     startObserver();
     scanAndInit();

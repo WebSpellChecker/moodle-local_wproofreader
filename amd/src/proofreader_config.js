@@ -61,7 +61,11 @@ export const apply = (config) => {
         lang: config.lang,
         enableBadgeButton: isBadgeEnabled,
         actionItems: badgeActions,
-        disableAutoSearchIn: toArray(config.disableAutoSearchIn),
+        // Plain textareas are attached explicitly by
+        // local_wproofreader/environment_textarea instead of the bundle's
+        // own autoSearch, which only scans once at load and misses fields
+        // revealed later (e.g. an mform "Show more" advanced section).
+        disableAutoSearchIn: [...toArray(config.disableAutoSearchIn), 'textarea'],
         disableOptionsStorage: toArray(config.disableOptionsStorage),
         disableDictionariesPreferences: toBoolean(config.disableDictionariesPreferences, false),
         autocomplete: toBoolean(config.autocomplete, false),
@@ -73,7 +77,7 @@ export const apply = (config) => {
         ignoreDomainNames: toBoolean(config.ignoreDomainNames, true),
         ignoreWordsWithMixedCases: toBoolean(config.ignoreWordsWithMixedCases, true),
         ignoreWordsWithNumbers: toBoolean(config.ignoreWordsWithNumbers, true),
-        globalBadge: toBoolean(config.globalBadge, true),
+        globalBadge: toBoolean(config.globalBadge, false),
         compactBadge: toBoolean(config.compactBadge, true),
         allSuggestionsMode: toBoolean(config.allSuggestionsMode, true),
         onLoad: function() {
