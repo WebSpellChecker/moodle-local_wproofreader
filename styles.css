@@ -1,0 +1,29 @@
+/* This file is part of Moodle - https://moodle.org/
+ *
+ * Moodle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Moodle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/*
+ * Informational per-field warning note, styled like Moodle's own
+ * .invalid-feedback but in orange rather than red, since it is not a form
+ * validation error and must not read as one.
+ */
+.wsc-field-warning {
+    display: block;
+    width: 100%;
+    margin-top: 0.25rem;
+    font-size: 0.875em;
+    font-weight: bold;
+    color: #f0ad4e;
+}

@@ -16,10 +16,18 @@
 /**
  * Plain HTML textarea integration.
  *
+ * Attaches explicitly instead of relying on the bundle's own autoSearch
+ * (disabled for textareas in proofreader_config.js), since autoSearch only
+ * scans once at load and misses fields revealed later, such as an mform
+ * "Show more" advanced section.
+ *
  * @module     local_wproofreader/environment_textarea
  * @copyright  2026 WebSpellChecker
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+import {notifyField} from 'local_wproofreader/notify';
+import {ATTACHED_ATTR} from 'local_wproofreader/constants';
 
 const SKIP_CLASS = 'wsc-skip-autosearch';
 const CODE_FIELD_HINTS = [
@@ -30,6 +38,10 @@ const CODE_FIELD_HINTS = [
     'name$="[customcss]"',
 ];
 
+let observer = null;
+let hookInstalled = false;
+let attachErrorMessage = null;
+
 const tagSkippableTextareas = () => {
     const selectors = CODE_FIELD_HINTS.map((hint) => `textarea[${hint}]`).join(',');
 
@@ -38,22 +50,78 @@ const tagSkippableTextareas = () => {
     });
 };
 
+const isVisible = (element) => !!(element.offsetWidth || element.offsetHeight || element.getClientRects().length);
+
+const findTextareas = () => Array.from(document.querySelectorAll('textarea'))
+    .filter((textarea) => !textarea.classList.contains(SKIP_CLASS));
+
+const createInstance = (textarea) => {
+    if (!textarea || textarea.hasAttribute(ATTACHED_ATTR) || !isVisible(textarea) || !window.WEBSPELLCHECKER) {
+        return;
+    }
+
+    textarea.setAttribute(ATTACHED_ATTR, '1');
+
+    try {
+        window.WEBSPELLCHECKER.init({container: textarea});
+    } catch (e) {
+        textarea.removeAttribute(ATTACHED_ATTR);
+        if (window.console && window.console.warn) {
+            window.console.warn('WProofreader: failed to attach to textarea', e);
+        }
+        notifyField(textarea, attachErrorMessage);
+    }
+};
+
+const scanAndInit = () => {
+    findTextareas().forEach(createInstance);
+};
+
+const startObserver = () => {
+    if (observer || typeof MutationObserver === 'undefined') {
+        return;
+    }
+
+    observer = new MutationObserver(() => {
+        scanAndInit();
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['class'],
+    });
+};
+
+const hookBundleReady = () => {
+    if (hookInstalled) {
+        return;
+    }
+    hookInstalled = true;
+
+    const previous = window.webspellcheckerAlreadyLoaded;
+    window.webspellcheckerAlreadyLoaded = function() {
+        if (typeof previous === 'function') {
+            try {
+                previous.apply(this, arguments);
+            } catch (e) {
+                // Preserve original callback contract on failure.
+            }
+        }
+        scanAndInit();
+    };
+};
+
 /**
  * Initialize the textarea environment.
  *
- * @param {Object} config Page configuration (mutated to extend disableAutoSearchIn).
+ * @param {Object} config Page configuration.
  */
 export const init = (config) => {
+    attachErrorMessage = config && config.editorAttachErrorMessage || null;
     tagSkippableTextareas();
-
-    if (window.WEBSPELLCHECKER_CONFIG && Array.isArray(window.WEBSPELLCHECKER_CONFIG.disableAutoSearchIn)) {
-        const skipSelector = `.${SKIP_CLASS}`;
-        if (!window.WEBSPELLCHECKER_CONFIG.disableAutoSearchIn.includes(skipSelector)) {
-            window.WEBSPELLCHECKER_CONFIG.disableAutoSearchIn.push(skipSelector);
-        }
-    }
-
-    // Keep the parameter signature consistent for the init dispatcher even though
-    // we do not currently use the rest of the config here.
-    void config;
+    hookBundleReady();
+    startObserver();
+    scanAndInit();
 };

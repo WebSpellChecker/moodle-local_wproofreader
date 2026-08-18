@@ -24,10 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['badge_placement'] = 'Badge placement';
-$string['badge_placement_desc'] = 'Where to render the WProofreader badge. "Page corner" shows a single floating badge in the bottom-right corner of the page that controls all editors. "Per editor" attaches a separate badge to each editor.';
-$string['badge_placement_page_corner'] = 'Page corner';
-$string['badge_placement_per_editor'] = 'Per editor';
+$string['bundle_load_error'] = '⚠️ WProofreader service is temporarily unavailable. Reload the page or try again later.';
+$string['editor_attach_error'] = '⚠️ WProofreader could not start on this editor. Reload the page or try again later.';
 $string['enable_ai_writing_assistant'] = 'AI writing assistant';
 $string['enable_ai_writing_assistant_desc'] = 'Offer rephrasing and tone suggestions powered by the AI writing assistant. Requires a paid license.';
 $string['enable_autocomplete'] = 'Text autocomplete';
@@ -71,6 +69,8 @@ $string['privacy:metadata:wproofreader_service:content'] = 'The text content the
 $string['privacy:metadata:wproofreader_service:language'] = 'The language code selected for proofreading.';
 $string['privacy:metadata:wproofreader_service:useragent'] = 'Browser user agent string sent with each request to the service.';
 $string['privacy:metadata:wproofreader_service:userip'] = 'The IP address from which the browser contacts the WebSpellChecker service.';
+$string['runtime_language_unsupported'] = '⚠️ WProofreader: selected language is not supported. Please report this issue to the site administrator.';
+$string['runtime_service_unavailable'] = '⚠️ WProofreader service is temporarily unavailable. Try again in a moment.';
 $string['service_id'] = 'License key';
 $string['service_id_desc'] = 'Paste the license key delivered with your Moodle Marketplace purchase. Leave empty to use the free version. The license key lifts the daily usage limitation, unlocks enhanced grammar checking, the AI writing assistant, access to custom dictionaries and style guide functionality.';
 $string['service_id_invalid'] = '⚠️ Provided license key is invalid. Contact WProofreader support for assistance.';
@@ -85,6 +85,6 @@ $string['settings_general_desc'] = 'Configure how WProofreader connects to the W
 $string['settings_ignore'] = 'Spelling ignore options';
 $string['settings_ignore_desc'] = 'Skip certain word patterns during spell checking. These defaults apply site-wide; users can adjust them per editor from the badge menu.';
 $string['show_badge_button'] = 'Show badge button';
-$string['show_badge_button_desc'] = 'Display the orange WProofreader badge. The badge gives quick access to settings and the proofreading dialog. Use the "Badge placement" setting below to control where it appears.';
+$string['show_badge_button_desc'] = 'Display the orange WProofreader badge. The badge gives quick access to settings and the proofreading dialog.';
 $string['usage_limit_exceeded'] = '⚠️ The WProofreader usage limit for your license key has been exceeded. Contact WProofreader support for assistance.';
 $string['wproofreader:use'] = 'Use WProofreader on editor content';
