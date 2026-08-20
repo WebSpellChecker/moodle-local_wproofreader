@@ -2,6 +2,13 @@
 
 All notable changes to the WProofreader plugin for Moodle are documented here.
 
+## 2.0.0 (2026-08-20)
+
+* Widened official Moodle support to 4.1 through the 5.2 branch (previously 4.5 LTS through 5.2).
+* Added support for the legacy TinyMCE editor (Moodle 4.1's "TinyMCE HTML editor (legacy)").
+* Removed the global badge option.
+* Surfaced the WProofreader bundle's own runtime warnings (unsupported language, service unavailable) and the WebSpellChecker service's HTTP error responses (400/403/404/409/500/503) as a non-blocking, per-editor note instead of leaving them silent or shown only in the browser console.
+
 ## 1.0.10 (2026-08-11)
 
 * Added warning messages for an exceeded usage limit and an invalid license key on the settings page.

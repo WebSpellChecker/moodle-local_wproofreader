@@ -29,12 +29,12 @@ import {notifyField} from 'local_wproofreader/notify';
 // the existing service-unavailable message - same condition, whether reported
 // as a transport failure or a real HTTP response.
 const STATUS_MESSAGE_KEYS = {
-    400: 'runtimeErrorBadRequestMessage',
-    403: 'runtimeErrorForbiddenMessage',
-    404: 'runtimeErrorNotFoundMessage',
-    409: 'runtimeErrorConflictMessage',
-    500: 'runtimeErrorServerMessage',
-    503: 'runtimeServiceUnavailableMessage',
+    '400': 'runtimeErrorBadRequestMessage',
+    '403': 'runtimeErrorForbiddenMessage',
+    '404': 'runtimeErrorNotFoundMessage',
+    '409': 'runtimeErrorConflictMessage',
+    '500': 'runtimeErrorServerMessage',
+    '503': 'runtimeServiceUnavailableMessage',
 };
 
 const toBoolean = (value, fallback) => {
