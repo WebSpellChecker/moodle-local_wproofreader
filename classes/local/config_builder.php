@@ -68,7 +68,7 @@ class config_builder {
             'enableGrammar'     => $grammar,
             'aiWritingAssistant' => $aiassistant,
             'enableBadgeButton' => $badgeenabled,
-            'globalBadge'       => self::is_page_corner_badge(),
+            'globalBadge'       => false,
             'compactBadge'      => true,
             'autocomplete'      => $autocomplete,
             'allSuggestionsMode' => false,
@@ -89,6 +89,15 @@ class config_builder {
                 ? ['addWord', 'ignoreAll', 'toggle', 'proofreadDialog']
                 : ['addWord', 'ignoreAll', 'proofreadDialog'],
             'disableAutoSearchIn' => self::excluded_selectors(),
+            'bundleLoadErrorMessage'  => get_string('bundle_load_error', 'local_wproofreader'),
+            'editorAttachErrorMessage' => get_string('editor_attach_error', 'local_wproofreader'),
+            'runtimeServiceUnavailableMessage'  => get_string('runtime_service_unavailable', 'local_wproofreader'),
+            'runtimeLanguageUnsupportedMessage' => get_string('runtime_language_unsupported', 'local_wproofreader'),
+            'runtimeErrorBadRequestMessage' => get_string('runtime_error_bad_request', 'local_wproofreader'),
+            'runtimeErrorForbiddenMessage'  => get_string('runtime_error_forbidden', 'local_wproofreader'),
+            'runtimeErrorNotFoundMessage'   => get_string('runtime_error_not_found', 'local_wproofreader'),
+            'runtimeErrorConflictMessage'   => get_string('runtime_error_conflict', 'local_wproofreader'),
+            'runtimeErrorServerMessage'     => get_string('runtime_error_server', 'local_wproofreader'),
         ];
 
         if ($isfree) {
@@ -149,18 +158,6 @@ class config_builder {
         $serviceid = $serviceid ?? self::service_id();
 
         return $serviceid === self::TRIAL_SERVICE_ID;
-    }
-
-    /**
-     * Whether the badge should render as a single page-corner element.
-     *
-     * Defaults to true so existing installs that have not yet seen the
-     * `badge_placement` setting keep their previous behavior.
-     *
-     * @return bool
-     */
-    public static function is_page_corner_badge(): bool {
-        return (string) get_config('local_wproofreader', 'badge_placement') !== 'per_editor';
     }
 
     /**

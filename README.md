@@ -1,8 +1,9 @@
 # WProofreader plugin for Moodle
 
 WProofreader is a real-time spelling, grammar, and style checker for editor
-content in Moodle. It works inside the Atto editor (Moodle 4.5 LTS), TinyMCE 6,
-and plain HTML textareas, with no per-editor configuration required.
+content in Moodle. It works inside the Atto editor (Moodle 4.1 through 4.5 LTS),
+TinyMCE 6, the legacy TinyMCE editor (Moodle 4.1 only), and plain HTML
+textareas, with no per-editor configuration required.
 
 ## Features
 
@@ -33,19 +34,20 @@ WProofreader > License key*.
 
 ## Supported Moodle versions
 
-* Moodle 4.5 LTS (2024100700) and any later release up to the 5.2 branch
-* Atto support is only relevant on 4.5. From 5.0 onward Atto is removed and the
-  Atto integration becomes a no-op automatically.
+* Moodle 4.1 (2022112800) through the 5.2 branch
+* Atto is relevant on 4.1 through 4.5 LTS. From 5.0 onward Atto is removed from
+  core and the Atto integration becomes a no-op automatically.
 * On Moodle 5.x the plugin installs under `public/local/wproofreader/` (Moodle's
-  5.0+ web-root split). On 4.5 it installs under `local/wproofreader/`.
+  5.0+ web-root split). On 4.1 through 4.5 it installs under `local/wproofreader/`.
 
 ## Supported editors
 
-| Editor          | How it is detected                                              |
-|-----------------|------------------------------------------------------------------|
-| Atto            | `.editor_atto_content[contenteditable="true"]` in the main DOM   |
-| TinyMCE 6       | `window.tinymce.editors`, hooked on each editor's `init` event  |
-| Plain textareas | Bundle's `autoSearch` plus a small list of code-field exclusions |
+| Editor              | How it is detected                                                  |
+|---------------------|-----------------------------------------------------------------------|
+| Atto                | `.editor_atto_content[contenteditable="true"]` in the main DOM       |
+| TinyMCE 6           | `window.tinymce.editors`, hooked on each editor's `init` event      |
+| Legacy TinyMCE (4.1 only) | `window.tinymce.editors` (same global as TinyMCE 6, told apart by API shape), hooked on each editor's `onInit` event |
+| Plain textareas     | Attached explicitly (autoSearch disabled for textareas); a small list of code-field exclusions is skipped, along with any textarea already managed by a TinyMCE instance |
 
 ## Installation
 
@@ -67,8 +69,7 @@ All settings live under *Site administration > Plugins > Local plugins > WProofr
 |----------------------|-------------|-------------|
 | License key          | empty       | Paste the license key delivered with your Moodle Marketplace purchase. Leave empty to use the free version. |
 | Default language     | Auto        | Initial proofreading language. *Auto* lets the WebSpellChecker service detect the language from the content being checked; pick a specific language to pin it. The dropdown is refreshed live from the service when the settings page loads. |
-| Show badge button    | enabled     | Toggles the orange WProofreader badge on or off. |
-| Badge placement      | Page corner | Where to render the badge. "Page corner" shows a single floating badge in the bottom-right corner of the page that controls all editors. "Per editor" attaches a separate badge to each editor. |
+| Show badge button    | enabled     | Toggles the orange WProofreader badge on or off. A separate badge attaches to each editor on the page. |
 
 ### Proofreading features
 

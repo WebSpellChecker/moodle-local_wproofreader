@@ -21,6 +21,22 @@
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+import {notifyField} from 'local_wproofreader/notify';
+
+// Maps the HTTP status codes documented at
+// https://docs.wproofreader.com/api-reference/http-response-status-codes to
+// the config message key carrying the corresponding warning text. 503 reuses
+// the existing service-unavailable message - same condition, whether reported
+// as a transport failure or a real HTTP response.
+const STATUS_MESSAGE_KEYS = {
+    '400': 'runtimeErrorBadRequestMessage',
+    '403': 'runtimeErrorForbiddenMessage',
+    '404': 'runtimeErrorNotFoundMessage',
+    '409': 'runtimeErrorConflictMessage',
+    '500': 'runtimeErrorServerMessage',
+    '503': 'runtimeServiceUnavailableMessage',
+};
+
 const toBoolean = (value, fallback) => {
     if (value === true || value === 'true') {
         return true;
@@ -61,7 +77,11 @@ export const apply = (config) => {
         lang: config.lang,
         enableBadgeButton: isBadgeEnabled,
         actionItems: badgeActions,
-        disableAutoSearchIn: toArray(config.disableAutoSearchIn),
+        // Plain textareas are attached explicitly by
+        // local_wproofreader/environment_textarea instead of the bundle's
+        // own autoSearch, which only scans once at load and misses fields
+        // revealed later (e.g. an mform "Show more" advanced section).
+        disableAutoSearchIn: [...toArray(config.disableAutoSearchIn), 'textarea'],
         disableOptionsStorage: toArray(config.disableOptionsStorage),
         disableDictionariesPreferences: toBoolean(config.disableDictionariesPreferences, false),
         autocomplete: toBoolean(config.autocomplete, false),
@@ -73,7 +93,7 @@ export const apply = (config) => {
         ignoreDomainNames: toBoolean(config.ignoreDomainNames, true),
         ignoreWordsWithMixedCases: toBoolean(config.ignoreWordsWithMixedCases, true),
         ignoreWordsWithNumbers: toBoolean(config.ignoreWordsWithNumbers, true),
-        globalBadge: toBoolean(config.globalBadge, true),
+        globalBadge: toBoolean(config.globalBadge, false),
         compactBadge: toBoolean(config.compactBadge, true),
         allSuggestionsMode: toBoolean(config.allSuggestionsMode, true),
         onLoad: function() {
@@ -89,6 +109,19 @@ export const apply = (config) => {
                 });
             } catch (e) {
                 // Older bundles may not expose subscribe; ignore.
+            }
+        },
+        onErrorRequest: (error, instance) => {
+            const key = STATUS_MESSAGE_KEYS[error && error.status];
+            const message = key && config[key];
+            if (!message) {
+                return;
+            }
+
+            try {
+                notifyField(instance.getContainerNode(), message);
+            } catch (e) {
+                // The container may have been detached by the host editor; safe to ignore.
             }
         },
     };

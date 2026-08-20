@@ -27,8 +27,10 @@
 import * as Config from 'local_wproofreader/proofreader_config';
 import * as AttoEnv from 'local_wproofreader/environment_atto';
 import * as TinyMceEnv from 'local_wproofreader/environment_tinymce';
+import * as TinyMceLegacyEnv from 'local_wproofreader/environment_tinymce_legacy';
 import * as TextareaEnv from 'local_wproofreader/environment_textarea';
 import {loadBundle} from 'local_wproofreader/bundle_loader';
+import {install as installBundleWarnings} from 'local_wproofreader/bundle_warnings';
 
 /**
  * Boot WProofreader on the current page.
@@ -45,10 +47,17 @@ export const init = async() => {
     await loadBundle(config.bundleUrl);
 
     if (!window.WEBSPELLCHECKER) {
+        TextareaEnv.notifyUnavailable(config.bundleLoadErrorMessage);
+        AttoEnv.notifyUnavailable(config.bundleLoadErrorMessage);
+        TinyMceEnv.notifyUnavailable(config.bundleLoadErrorMessage);
+        TinyMceLegacyEnv.notifyUnavailable(config.bundleLoadErrorMessage);
         return;
     }
+
+    installBundleWarnings(config);
 
     TextareaEnv.init(config);
     AttoEnv.init(config);
     TinyMceEnv.init(config);
+    TinyMceLegacyEnv.init(config);
 };

@@ -64,17 +64,6 @@ if ($hassiteconfig) {
             1
         ));
 
-        $settings->add(new admin_setting_configselect(
-            'local_wproofreader/badge_placement',
-            get_string('badge_placement', 'local_wproofreader'),
-            get_string('badge_placement_desc', 'local_wproofreader'),
-            'page_corner',
-            [
-                'page_corner' => get_string('badge_placement_page_corner', 'local_wproofreader'),
-                'per_editor'  => get_string('badge_placement_per_editor', 'local_wproofreader'),
-            ]
-        ));
-
         // Proofreading features section.
         $settings->add(new admin_setting_heading(
             'local_wproofreader/heading_features',
