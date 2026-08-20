@@ -93,6 +93,11 @@ class config_builder {
             'editorAttachErrorMessage' => get_string('editor_attach_error', 'local_wproofreader'),
             'runtimeServiceUnavailableMessage'  => get_string('runtime_service_unavailable', 'local_wproofreader'),
             'runtimeLanguageUnsupportedMessage' => get_string('runtime_language_unsupported', 'local_wproofreader'),
+            'runtimeErrorBadRequestMessage' => get_string('runtime_error_bad_request', 'local_wproofreader'),
+            'runtimeErrorForbiddenMessage'  => get_string('runtime_error_forbidden', 'local_wproofreader'),
+            'runtimeErrorNotFoundMessage'   => get_string('runtime_error_not_found', 'local_wproofreader'),
+            'runtimeErrorConflictMessage'   => get_string('runtime_error_conflict', 'local_wproofreader'),
+            'runtimeErrorServerMessage'     => get_string('runtime_error_server', 'local_wproofreader'),
         ];
 
         if ($isfree) {

@@ -26,7 +26,7 @@
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-import {notifyField} from 'local_wproofreader/notify';
+import {notifyField, observeUnavailable} from 'local_wproofreader/notify';
 import {ATTACHED_ATTR} from 'local_wproofreader/constants';
 
 const SKIP_CLASS = 'wsc-skip-autosearch';
@@ -52,8 +52,13 @@ const tagSkippableTextareas = () => {
 
 const isVisible = (element) => !!(element.offsetWidth || element.offsetHeight || element.getClientRects().length);
 
+const isManagedByTinymce = (textarea) => !!textarea.id
+    && !!window.tinymce
+    && typeof window.tinymce.get === 'function'
+    && !!window.tinymce.get(textarea.id);
+
 const findTextareas = () => Array.from(document.querySelectorAll('textarea'))
-    .filter((textarea) => !textarea.classList.contains(SKIP_CLASS));
+    .filter((textarea) => !textarea.classList.contains(SKIP_CLASS) && !isManagedByTinymce(textarea));
 
 const createInstance = (textarea) => {
     if (!textarea || textarea.hasAttribute(ATTACHED_ATTR) || !isVisible(textarea) || !window.WEBSPELLCHECKER) {
@@ -124,4 +129,17 @@ export const init = (config) => {
     hookBundleReady();
     startObserver();
     scanAndInit();
+};
+
+/**
+ * Show a warning next to every plain textarea on the page, now and for any
+ * that appear later, without attaching an instance. Used when the
+ * WProofreader bundle itself failed to load, so no instance can ever attach
+ * to report per-field problems itself.
+ *
+ * @param {string} message Warning text to display.
+ */
+export const notifyUnavailable = (message) => {
+    tagSkippableTextareas();
+    observeUnavailable(findTextareas, message);
 };

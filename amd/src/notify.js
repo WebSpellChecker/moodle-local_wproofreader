@@ -16,41 +16,53 @@
 /**
  * Shared warning display for WProofreader runtime notices.
  *
- * core/notification.addNotification() always renders into the page-level
- * #user-notifications region. When the editor triggering a warning lives
- * inside an open Moodle modal (e.g. the calendar's "New event" dialog), that
- * region sits behind the modal's backdrop and the notification is never
- * seen, so render inside the open modal's own body in that case instead.
- *
- * Where the warning can be tied to a specific editor field, show it next to
- * that field directly, styled as an informational (orange, bold) note in the
- * same spot as Moodle's own per-field validation error - but not using
- * core_form/events' notifyFieldValidationFailure() itself: that sets
- * .is-invalid/.has-danger, which mform's own client-side validation checks
- * on submit and blocks the form on. This is an FYI about proofreading, not a
- * reason to stop the user submitting their content.
+ * Warnings are always shown next to the specific editor field they concern,
+ * styled as an informational (orange, bold) note in the same spot as
+ * Moodle's own per-field validation error - but not using core_form/events'
+ * notifyFieldValidationFailure() itself: that sets .is-invalid/.has-danger,
+ * which mform's own client-side validation checks on submit and blocks the
+ * form on. This is an FYI about proofreading, not a reason to stop the user
+ * submitting their content. There is no page-level or modal-level fallback:
+ * a warning that cannot be tied to a specific field is dropped rather than
+ * shown anywhere else.
  *
  * @module     local_wproofreader/notify
  * @copyright  2026 WebSpellChecker
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-import Notification from 'core/notification';
 import {INSTANCE_ATTR, INSTANCE_ATTR_VALUE, ATTACHED_ATTR} from 'local_wproofreader/constants';
 
-const OPEN_MODAL_SELECTOR = '.modal.show';
 const FIELD_WARNING_CLASS = 'wsc-field-warning';
 // Plain textareas only carry the bundle's own INSTANCE_ATTR; Atto/TinyMCE
 // only carry our own ATTACHED_ATTR (see constants.js for why neither alone
 // covers all three editor types).
 const ATTACHED_INSTANCE_SELECTOR = `[${INSTANCE_ATTR}="${INSTANCE_ATTR_VALUE}"], [${ATTACHED_ATTR}]`;
 
-const findOpenModalBody = () => {
-    const modal = document.querySelector(OPEN_MODAL_SELECTOR);
-    if (!modal) {
+/**
+ * Find the tinymce.Editor instance (new or legacy) whose iframe is, or
+ * contains, the given container - either the outer iframe itself, or its
+ * contentDocument.body, which is what a WProofreader instance's own
+ * getContainerNode() reports once it finishes attaching inside an iframe
+ * (it reassigns its tracked container from the outer iframe we passed in to
+ * the inner editable body).
+ *
+ * @param {HTMLElement} container
+ * @returns {Object|null} tinymce.Editor instance, or null if none matches.
+ */
+const findTinymceEditorFor = (container) => {
+    if (!window.tinymce || typeof window.tinymce.get !== 'function') {
         return null;
     }
-    return modal.querySelector('.modal-body') || modal;
+
+    const editors = window.tinymce.get() || [];
+    return (Array.isArray(editors) ? editors : []).find((candidate) => {
+        if (!candidate) {
+            return false;
+        }
+        const iframe = candidate.iframeElement || document.getElementById(`${candidate.id}_ifr`);
+        return iframe === container || (iframe && iframe.contentDocument && iframe.contentDocument.body === container);
+    }) || null;
 };
 
 /**
@@ -67,12 +79,9 @@ const findOriginalField = (container) => {
         return null;
     }
 
-    if (container.tagName === 'IFRAME' && window.tinymce && typeof window.tinymce.get === 'function') {
-        const editor = window.tinymce.get().find((candidate) => candidate && candidate.iframeElement === container);
-        if (editor && typeof editor.getElement === 'function') {
-            return editor.getElement();
-        }
-        return null;
+    if (container.tagName === 'IFRAME' || container.tagName === 'BODY') {
+        const editor = findTinymceEditorFor(container);
+        return editor && typeof editor.getElement === 'function' ? editor.getElement() : null;
     }
 
     // Atto hides the original textarea and inserts its editable wrapper as a
@@ -80,33 +89,6 @@ const findOriginalField = (container) => {
     // own only match within that same wrapper.
     const wrapper = container.closest('.felement, .fitem');
     return wrapper ? wrapper.querySelector('textarea') : null;
-};
-
-/**
- * Show a warning, inside the open modal if there is one, else page-wide.
- *
- * @param {string} message Warning text to display.
- */
-export const showWarning = (message) => {
-    if (!message) {
-        return;
-    }
-
-    const modalBody = findOpenModalBody();
-    if (!modalBody) {
-        Notification.addNotification({message, type: 'warning'}).then(() => {
-            document.querySelector('#user-notifications')?.scrollIntoView({behavior: 'smooth', block: 'center'});
-            return;
-        });
-        return;
-    }
-
-    const alert = document.createElement('div');
-    alert.className = 'alert alert-warning';
-    alert.setAttribute('role', 'alert');
-    alert.textContent = message;
-    modalBody.prepend(alert);
-    alert.scrollIntoView({behavior: 'smooth', block: 'nearest'});
 };
 
 /**
@@ -119,7 +101,6 @@ export const showWarning = (message) => {
 const showFieldWarning = (field, message) => {
     const wrapper = field.closest('.felement') || field.parentElement;
     if (!wrapper) {
-        showWarning(message);
         return;
     }
 
@@ -136,8 +117,8 @@ const showFieldWarning = (field, message) => {
 /**
  * Show a warning next to the specific editor field that triggered it, as an
  * informational note rather than a form validation error - it must never
- * block form submission. Falls back to showWarning() if the container
- * cannot be resolved back to a real mform field.
+ * block form submission. Dropped silently if the container cannot be
+ * resolved back to a real mform field.
  *
  * @param {HTMLElement} container The element passed to WEBSPELLCHECKER.init().
  * @param {string} message Warning text to display.
@@ -149,7 +130,6 @@ export const notifyField = (container, message) => {
 
     const field = findOriginalField(container);
     if (!field) {
-        showWarning(message);
         return;
     }
 
@@ -170,4 +150,36 @@ export const notifyAllAttachedFields = (message) => {
     }
 
     document.querySelectorAll(ATTACHED_INSTANCE_SELECTOR).forEach((container) => notifyField(container, message));
+};
+
+/**
+ * Show a warning beside every container an editor environment finds, now and
+ * for any that appear later (e.g. the calendar's AJAX-loaded "New event"
+ * dialog, or an mform "Show more" section revealed after the initial scan).
+ * Used when the WProofreader bundle failed to load entirely, so there is no
+ * instance to attach and no ATTACHED_ATTR marker will ever be set the normal
+ * way - this sets it itself, to avoid re-notifying the same container.
+ *
+ * @param {Function} findContainers Returns the current list of containers an environment recognizes.
+ * @param {string} message Warning text to display.
+ */
+export const observeUnavailable = (findContainers, message) => {
+    if (!message) {
+        return;
+    }
+
+    const scan = () => {
+        findContainers().forEach((container) => {
+            if (!container.hasAttribute(ATTACHED_ATTR)) {
+                container.setAttribute(ATTACHED_ATTR, '1');
+                notifyField(container, message);
+            }
+        });
+    };
+
+    scan();
+
+    if (typeof MutationObserver !== 'undefined') {
+        new MutationObserver(scan).observe(document.body, {childList: true, subtree: true});
+    }
 };

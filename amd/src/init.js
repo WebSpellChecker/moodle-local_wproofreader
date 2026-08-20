@@ -24,10 +24,10 @@
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-import {showWarning} from 'local_wproofreader/notify';
 import * as Config from 'local_wproofreader/proofreader_config';
 import * as AttoEnv from 'local_wproofreader/environment_atto';
 import * as TinyMceEnv from 'local_wproofreader/environment_tinymce';
+import * as TinyMceLegacyEnv from 'local_wproofreader/environment_tinymce_legacy';
 import * as TextareaEnv from 'local_wproofreader/environment_textarea';
 import {loadBundle} from 'local_wproofreader/bundle_loader';
 import {install as installBundleWarnings} from 'local_wproofreader/bundle_warnings';
@@ -47,7 +47,10 @@ export const init = async() => {
     await loadBundle(config.bundleUrl);
 
     if (!window.WEBSPELLCHECKER) {
-        showWarning(config.bundleLoadErrorMessage);
+        TextareaEnv.notifyUnavailable(config.bundleLoadErrorMessage);
+        AttoEnv.notifyUnavailable(config.bundleLoadErrorMessage);
+        TinyMceEnv.notifyUnavailable(config.bundleLoadErrorMessage);
+        TinyMceLegacyEnv.notifyUnavailable(config.bundleLoadErrorMessage);
         return;
     }
 
@@ -56,4 +59,5 @@ export const init = async() => {
     TextareaEnv.init(config);
     AttoEnv.init(config);
     TinyMceEnv.init(config);
+    TinyMceLegacyEnv.init(config);
 };

@@ -21,7 +21,7 @@
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-import {notifyField} from 'local_wproofreader/notify';
+import {notifyField, observeUnavailable} from 'local_wproofreader/notify';
 import {ATTACHED_ATTR} from 'local_wproofreader/constants';
 
 const SELECTORS = [
@@ -112,3 +112,13 @@ export const init = (config) => {
     startObserver();
     scanAndInit();
 };
+
+/**
+ * Show a warning next to every Atto editor on the page, now and for any that
+ * appear later, without attaching an instance. Used when the WProofreader
+ * bundle itself failed to load, so no instance can ever attach to report
+ * per-field problems itself.
+ *
+ * @param {string} message Warning text to display.
+ */
+export const notifyUnavailable = (message) => observeUnavailable(findEditors, message);

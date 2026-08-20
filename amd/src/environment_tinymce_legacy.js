@@ -14,9 +14,15 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * TinyMCE 6 editor integration.
+ * Legacy TinyMCE editor integration (editor_tinymce, TinyMCE 3.5.x, Moodle's
+ * "TinyMCE HTML editor (legacy)"). Distinct from environment_tinymce.js,
+ * which targets the newer TinyMCE 6 "tiny" editor plugin - the two ship
+ * different iframe markup and editor APIs, and both publish themselves as
+ * window.tinymce, so editor instances are told apart by feature (an
+ * .iframeElement property only the newer editor exposes), not by a global
+ * version flag.
  *
- * @module     local_wproofreader/environment_tinymce
+ * @module     local_wproofreader/environment_tinymce_legacy
  * @copyright  2026 WebSpellChecker
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -24,25 +30,24 @@
 import {notifyField, observeUnavailable} from 'local_wproofreader/notify';
 import {ATTACHED_ATTR} from 'local_wproofreader/constants';
 
-const SELECTOR = 'iframe.tox-edit-area__iframe';
-
 let observer = null;
 let hookInstalled = false;
 let attachErrorMessage = null;
-
-const findIframes = () => Array.from(document.querySelectorAll(SELECTOR));
 
 const isMarked = (iframe) => iframe.hasAttribute(ATTACHED_ATTR);
 const mark = (iframe) => iframe.setAttribute(ATTACHED_ATTR, '1');
 const unmark = (iframe) => iframe.removeAttribute(ATTACHED_ATTR);
 
+const isLegacyEditor = (editor) => !!editor
+    && !editor.iframeElement
+    && editor.onInit && typeof editor.onInit.add === 'function';
 
-const findEditor = (iframe) => {
+const findLegacyEditors = () => {
     if (!window.tinymce || typeof window.tinymce.get !== 'function') {
-        return null;
+        return [];
     }
-    const editors = window.tinymce.get() || [];
-    return editors.find((editor) => editor && editor.iframeElement === iframe) || null;
+    const all = window.tinymce.get() || [];
+    return (Array.isArray(all) ? all : []).filter(isLegacyEditor);
 };
 
 const initInstance = (iframe) => {
@@ -59,18 +64,20 @@ const initInstance = (iframe) => {
     } catch (e) {
         unmark(iframe);
         if (window.console && window.console.warn) {
-            window.console.warn('WProofreader: failed to attach to TinyMCE editor', e);
+            window.console.warn('WProofreader: failed to attach to legacy TinyMCE editor', e);
         }
         notifyField(iframe, attachErrorMessage);
     }
 };
 
 /**
- * Decide when to attach to a single iframe: now, or on the editor's init event.
+ * Decide when to attach to a single legacy editor instance: now, or once it
+ * finishes initializing.
  *
- * @param {HTMLIFrameElement} iframe
+ * @param {Object} editor A tinymce.Editor instance (legacy API).
  */
-const attach = (iframe) => {
+const attach = (editor) => {
+    const iframe = document.getElementById(`${editor.id}_ifr`);
     if (!iframe || isMarked(iframe) || !window.WEBSPELLCHECKER || !window.WEBSPELLCHECKER_CONFIG) {
         return;
     }
@@ -79,9 +86,8 @@ const attach = (iframe) => {
     // initInstance unmarks again if the editor turns out not to be ready.
     mark(iframe);
 
-    const editor = findEditor(iframe);
-    if (editor && !editor.initialized && typeof editor.on === 'function') {
-        editor.on('init', () => initInstance(iframe));
+    if (!editor.initialized) {
+        editor.onInit.add(() => initInstance(iframe));
         return;
     }
 
@@ -89,7 +95,7 @@ const attach = (iframe) => {
 };
 
 const scanAndInit = () => {
-    findIframes().forEach(attach);
+    findLegacyEditors().forEach(attach);
 };
 
 const startObserver = () => {
@@ -127,7 +133,7 @@ const hookBundleReady = () => {
 };
 
 /**
- * Initialize the TinyMCE environment.
+ * Initialize the legacy TinyMCE environment.
  *
  * @param {Object} config Page configuration.
  */
@@ -138,12 +144,16 @@ export const init = (config) => {
     scanAndInit();
 };
 
+const findLegacyIframes = () => findLegacyEditors()
+    .map((editor) => document.getElementById(`${editor.id}_ifr`))
+    .filter(Boolean);
+
 /**
- * Show a warning next to every TinyMCE 6 editor on the page, now and for any
- * that appear later, without attaching an instance. Used when the
+ * Show a warning next to every legacy TinyMCE editor on the page, now and
+ * for any that appear later, without attaching an instance. Used when the
  * WProofreader bundle itself failed to load, so no instance can ever attach
  * to report per-field problems itself.
  *
  * @param {string} message Warning text to display.
  */
-export const notifyUnavailable = (message) => observeUnavailable(findIframes, message);
+export const notifyUnavailable = (message) => observeUnavailable(findLegacyIframes, message);

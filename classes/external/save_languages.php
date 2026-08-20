@@ -16,30 +16,30 @@
 
 namespace local_wproofreader\external;
 
-use core_external\external_api;
-use core_external\external_function_parameters;
-use core_external\external_single_structure;
-use core_external\external_value;
-
 /**
  * External function that stores the live language list from the WebSpellChecker service.
  *
  * The settings page calls this over AJAX after asking the WProofreader bundle
  * for its supported languages. Only site administrators can invoke it.
  *
+ * Extends the global-namespace external API classes (not core_external\...)
+ * since Moodle keeps those as class_alias() back-compat shims on every
+ * version that also has the newer namespace, while older versions (pre-4.2)
+ * only ever had the global names.
+ *
  * @package    local_wproofreader
  * @copyright  2026 WebSpellChecker
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class save_languages extends external_api {
+class save_languages extends \external_api {
     /**
      * Parameter definition for save_languages.
      *
-     * @return external_function_parameters
+     * @return \external_function_parameters
      */
-    public static function execute_parameters(): external_function_parameters {
-        return new external_function_parameters([
-            'payload' => new external_value(PARAM_RAW, 'JSON-encoded language list from the WebSpellChecker service.'),
+    public static function execute_parameters(): \external_function_parameters {
+        return new \external_function_parameters([
+            'payload' => new \external_value(PARAM_RAW, 'JSON-encoded language list from the WebSpellChecker service.'),
         ]);
     }
 
@@ -73,12 +73,12 @@ class save_languages extends external_api {
     /**
      * Return value definition.
      *
-     * @return external_single_structure
+     * @return \external_single_structure
      */
-    public static function execute_returns(): external_single_structure {
-        return new external_single_structure([
-            'stored' => new external_value(PARAM_BOOL, 'Whether a language list was successfully stored.'),
-            'count'  => new external_value(PARAM_INT, 'Number of languages stored.'),
+    public static function execute_returns(): \external_single_structure {
+        return new \external_single_structure([
+            'stored' => new \external_value(PARAM_BOOL, 'Whether a language list was successfully stored.'),
+            'count'  => new \external_value(PARAM_INT, 'Number of languages stored.'),
         ]);
     }
 
