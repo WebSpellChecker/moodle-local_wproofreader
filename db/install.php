@@ -15,26 +15,30 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Capabilities for local_wproofreader.
+ * Install steps for local_wproofreader.
  *
  * @package    local_wproofreader
  * @copyright  2026 WebSpellChecker
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
+/**
+ * Seed the availability matrix on a fresh install.
+ *
+ * An unset matrix means every area is on for every role, which is the wrong
+ * starting point: quiz attempts, system pages and site administration were all
+ * off in the versions that had per-area toggles, and a new site should still
+ * start there. Sites upgrading keep whatever they had configured, which
+ * db/upgrade.php migrates instead.
+ *
+ * @return bool
+ */
+function xmldb_local_wproofreader_install(): bool {
+    set_config(
+        'area_roles',
+        \local_wproofreader\local\context_evaluator::default_area_roles(),
+        'local_wproofreader'
+    );
 
-$capabilities = [
-    'local/wproofreader:use' => [
-        'captype'      => 'read',
-        'contextlevel' => CONTEXT_COURSE,
-        'archetypes'   => [
-            'guest'          => CAP_ALLOW,
-            'user'           => CAP_ALLOW,
-            'student'        => CAP_ALLOW,
-            'teacher'        => CAP_ALLOW,
-            'editingteacher' => CAP_ALLOW,
-            'manager'        => CAP_ALLOW,
-        ],
-    ],
-];
+    return true;
+}

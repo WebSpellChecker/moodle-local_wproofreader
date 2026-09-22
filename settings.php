@@ -112,53 +112,22 @@ if ($hassiteconfig) {
             ));
         }
 
-        // Context section.
+        // Availability section.
+        $availabilityinfo = (object) [
+            'capability' => get_string('wproofreader:use', 'local_wproofreader'),
+            'defineroles' => (new moodle_url('/admin/roles/manage.php'))->out(),
+        ];
+
         $settings->add(new admin_setting_heading(
-            'local_wproofreader/heading_contexts',
-            get_string('settings_contexts', 'local_wproofreader'),
-            get_string('settings_contexts_desc', 'local_wproofreader')
+            'local_wproofreader/heading_availability',
+            get_string('settings_availability', 'local_wproofreader'),
+            ''
         ));
 
-        $settings->add(new admin_setting_configcheckbox(
-            'local_wproofreader/enable_in_courses',
-            get_string('enable_in_courses', 'local_wproofreader'),
-            get_string('enable_in_courses_desc', 'local_wproofreader'),
-            1
-        ));
-
-        $settings->add(new admin_setting_configcheckbox(
-            'local_wproofreader/enable_in_categories',
-            get_string('enable_in_categories', 'local_wproofreader'),
-            get_string('enable_in_categories_desc', 'local_wproofreader'),
-            1
-        ));
-
-        $settings->add(new admin_setting_configcheckbox(
-            'local_wproofreader/enable_on_users',
-            get_string('enable_on_users', 'local_wproofreader'),
-            get_string('enable_on_users_desc', 'local_wproofreader'),
-            1
-        ));
-
-        $settings->add(new admin_setting_configcheckbox(
-            'local_wproofreader/enable_on_quiz',
-            get_string('enable_on_quiz', 'local_wproofreader'),
-            get_string('enable_on_quiz_desc', 'local_wproofreader'),
-            0
-        ));
-
-        $settings->add(new admin_setting_configcheckbox(
-            'local_wproofreader/enable_on_frontend',
-            get_string('enable_on_frontend', 'local_wproofreader'),
-            get_string('enable_on_frontend_desc', 'local_wproofreader'),
-            0
-        ));
-
-        $settings->add(new admin_setting_configcheckbox(
-            'local_wproofreader/enable_in_admin',
-            get_string('enable_in_admin', 'local_wproofreader'),
-            get_string('enable_in_admin_desc', 'local_wproofreader'),
-            0
+        $settings->add(new \local_wproofreader\local\admin_setting_area_roles(
+            'local_wproofreader/area_roles',
+            get_string('area_roles', 'local_wproofreader'),
+            get_string('area_roles_desc', 'local_wproofreader', $availabilityinfo)
         ));
 
         // Editor info.

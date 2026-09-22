@@ -2,6 +2,18 @@
 
 All notable changes to the WProofreader plugin for Moodle are documented here.
 
+## 2.1.0 (2026-09-10)
+
+* Added role-based availability, and consolidated it with the per-area settings into a single "Where WProofreader is available" matrix: areas down the side, every site role across the top, one checkbox per cell. A ticked cell means users holding that role keep proofreading in that area.
+* Unticking one role withholds proofreading from the people who hold it, so students can write quiz answers unaided while teachers keep proofreading as they mark. Every role the user holds has to be ticked, because everyone logged in also holds Authenticated user.
+* Unticking a whole row switches that area off for everyone. This replaces the six "Enable in ..." checkboxes, which are migrated into the matrix on upgrade: an area that was switched off becomes a fully unticked row. No settings need revisiting after the upgrade.
+* A fresh install starts with quiz attempts, system pages and site administration switched off, matching the defaults the per-area toggles shipped with, so a new site does not begin offering suggestions during assessments.
+* In the two course areas a cell matches the role held in the course being viewed. In the other four areas, where no course role is in scope, it matches any role the user holds anywhere on the site, so unticking Student for user pages really does reach a student's dashboard.
+* Cells that Moodle would never reach are drawn as "—" rather than as checkboxes: Site administration offers only the roles holding `moodle/site:configview` (Manager and Course creator by default), and the front page role appears in the course areas only. The dashes come from the site's own role definitions, so granting that capability to a custom role adds its checkbox.
+* `local/wproofreader:use` is now checked in the context of the page being viewed rather than the system context, so role definitions and per-course or per-category permission overrides take effect. The capability is declared at course level, which makes it available in the course and category permission forms.
+* Per-course exceptions go through that capability and need "Prohibit" rather than "Prevent", because the authenticated user role grants it site-wide and Moodle lets an Allow held through any one role win. See the README.
+* Added the plugin's first automated tests: PHPUnit coverage of the availability gates, the matrix setting and the install defaults, plus Behat features that drive the matrix through real page requests as real users. Both run in CI.
+
 ## 2.0.0 (2026-08-20)
 
 * Widened official Moodle support to 4.1 through the 5.2 branch (previously 4.5 LTS through 5.2).

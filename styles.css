@@ -27,3 +27,87 @@
     font-weight: bold;
     color: #f0ad4e;
 }
+
+/*
+ * Area by role matrix on the settings page.
+ *
+ * Every rule is written against both classes on purpose. Boost styles the cells
+ * of a table that carries the "table" class, and borders every th of one that
+ * does not, so the plugin needs the class to opt out of the second and a second
+ * class to sit above the first.
+ */
+.local-wproofreader-grid-wrap {
+    overflow-x: auto;
+}
+
+/* border-top clears the rule Boost puts above every .table; the header rule below is enough. */
+.local-wproofreader-grid.table {
+    width: 100%;
+    min-width: 34rem;
+    margin-bottom: 0;
+    border-top: 0;
+    table-layout: fixed;
+}
+
+.local-wproofreader-grid.table th,
+.local-wproofreader-grid.table td {
+    padding: 0.4rem 0.5rem;
+    border: 0;
+    background: none;
+    vertical-align: middle;
+}
+
+.local-wproofreader-grid.table th {
+    font-size: 14px;
+}
+
+/* Role names head equal columns, and wrap inside them rather than widening them. */
+.local-wproofreader-grid.table thead th {
+    overflow-wrap: break-word;
+    font-weight: 600;
+    text-align: center;
+    vertical-align: bottom;
+    border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.local-wproofreader-grid.table thead .local-wproofreader-corner {
+    width: 20%;
+    border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.local-wproofreader-grid.table tbody th {
+    padding-left: 0;
+    font-weight: 600;
+    text-align: left;
+    vertical-align: top;
+}
+
+.local-wproofreader-grid.table tbody tr + tr th,
+.local-wproofreader-grid.table tbody tr + tr td {
+    border-top: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.local-wproofreader-grid.table .local-wproofreader-area-desc {
+    display: block;
+    margin-top: 0.15rem;
+    color: #6a737b;
+    font-size: 0.875em;
+    font-weight: normal;
+}
+
+.local-wproofreader-grid.table .local-wproofreader-cell {
+    text-align: center;
+}
+
+.local-wproofreader-grid.table .local-wproofreader-na {
+    color: #6a737b;
+}
+
+.local-wproofreader-offscreen {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+}
