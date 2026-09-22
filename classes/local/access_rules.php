@@ -206,6 +206,61 @@ class access_rules {
     }
 
     /**
+     * Whether one rule already grants everything another one grants.
+     *
+     * A rule reaches wider when it names everyone rather than one role, every
+     * feature rather than one, or everywhere rather than one site part. Two
+     * rules that cover each other are the same rule.
+     *
+     * @param array $wide The rule that may be the wider one.
+     * @param array $narrow The rule that may be covered.
+     * @return bool
+     */
+    public static function covers(array $wide, array $narrow): bool {
+        return ($wide['role'] === self::EVERYONE || $wide['role'] === $narrow['role'])
+            && ($wide['feature'] === self::ANY || $wide['feature'] === $narrow['feature'])
+            && ($wide['area'] === self::ANY || $wide['area'] === $narrow['area']);
+    }
+
+    /**
+     * How one rule stands against a list of rules.
+     *
+     * Nothing here forbids a rule. It only says which of the rules already
+     * listed say the same thing, say it more widely, or are made pointless by
+     * this one, by their number in the table.
+     *
+     * @param array $rule The rule to weigh up.
+     * @param array[] $rules The rules to weigh it against.
+     * @param int|null $self Position of the rule inside that list, when it is one of them.
+     * @return array Rule numbers under `duplicates`, `covered` and `takesover`.
+     */
+    public static function relations(array $rule, array $rules, ?int $self = null): array {
+        $relations = ['duplicates' => [], 'covered' => [], 'takesover' => []];
+
+        foreach ($rules as $index => $other) {
+            if ($index === $self) {
+                continue;
+            }
+
+            $wider = self::covers($other, $rule);
+            $narrower = self::covers($rule, $other);
+
+            if ($wider && $narrower) {
+                // The same rule twice. The one listed first is the original.
+                if ($self === null || $index < $self) {
+                    $relations['duplicates'][] = $index + 1;
+                }
+            } else if ($wider) {
+                $relations['covered'][] = $index + 1;
+            } else if ($narrower) {
+                $relations['takesover'][] = $index + 1;
+            }
+        }
+
+        return $relations;
+    }
+
+    /**
      * One rule written out as the sentence it stands for.
      *
      * @param array $rule A rule, as stored.

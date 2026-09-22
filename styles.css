@@ -60,3 +60,63 @@
 .local-wproofreader-rules-empty {
     margin-top: 1rem;
 }
+
+/*
+ * Marker on a rule that repeats or is covered by another one. The warning is
+ * always in the markup, and shown when the marker is hovered or focused, so
+ * that a keyboard reaches it as well as a pointer.
+ */
+.local-wproofreader-rule-info {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.15rem;
+    height: 1.15rem;
+    margin-left: 0.4rem;
+    border: 1px solid #f0ad4e;
+    border-radius: 50%;
+    color: #f0ad4e;
+    font-size: 0.75rem;
+    font-style: italic;
+    font-weight: bold;
+    line-height: 1;
+    cursor: help;
+    vertical-align: middle;
+}
+
+.local-wproofreader-rule-infobox {
+    position: absolute;
+    bottom: calc(100% + 0.4rem);
+    left: 50%;
+    z-index: 1;
+    width: max-content;
+    max-width: 18rem;
+    padding: 0.5rem 0.65rem;
+    border: 1px solid #f0ad4e;
+    border-radius: 0.25rem;
+    background: #fff;
+    color: #3c4652;
+    font-size: 0.8125rem;
+    font-style: normal;
+    font-weight: normal;
+    line-height: 1.4;
+    text-align: left;
+    white-space: normal;
+    transform: translateX(-50%);
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.1s ease-in;
+}
+
+.local-wproofreader-rule-info:hover .local-wproofreader-rule-infobox,
+.local-wproofreader-rule-info:focus .local-wproofreader-rule-infobox,
+.local-wproofreader-rule-info:focus-within .local-wproofreader-rule-infobox {
+    visibility: visible;
+    opacity: 1;
+}
+
+.local-wproofreader-rule-notice {
+    margin-top: 1rem;
+    margin-bottom: 0;
+}

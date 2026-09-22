@@ -155,6 +155,15 @@ class admin_setting_access_rules extends admin_setting {
             'removeLabel' => get_string('rule_remove', 'local_wproofreader'),
             'removeDescription' => $this->remove_description_template(),
             'missingRole' => get_string('rule_role_missing', 'local_wproofreader'),
+            'warningLabel' => get_string('rule_warning', 'local_wproofreader'),
+            'warnings' => [
+                'repeatsOne' => $this->template('rule_repeats_one', 'RULES'),
+                'repeatsMany' => $this->template('rule_repeats_many', 'RULES'),
+                'coveredOne' => $this->template('rule_covered_one', 'RULES'),
+                'coveredMany' => $this->template('rule_covered_many', 'RULES'),
+                'takesoverOne' => $this->template('rule_takesover_one', 'RULES'),
+                'takesoverMany' => $this->template('rule_takesover_many', 'RULES'),
+            ],
         ]]);
 
         $builder = html_writer::tag(
@@ -171,6 +180,13 @@ class admin_setting_access_rules extends admin_setting {
             ['class' => 'local-wproofreader-rule-builder']
         );
 
+        $notice = html_writer::tag('div', '', [
+            'class' => 'local-wproofreader-rule-notice alert alert-warning',
+            'role' => 'status',
+            'data-rule-notice' => '1',
+            'hidden' => 'hidden',
+        ]);
+
         $store = html_writer::empty_tag('input', [
             'type' => 'hidden',
             'name' => $this->get_full_name() . '[rules]',
@@ -180,7 +196,7 @@ class admin_setting_access_rules extends admin_setting {
 
         $control = html_writer::tag(
             'div',
-            $store . $builder . $this->listing($rules) . $this->empty_notice($rules),
+            $store . $builder . $notice . $this->listing($rules) . $this->empty_notice($rules),
             ['class' => 'local-wproofreader-rules-setting']
         );
 
@@ -238,7 +254,7 @@ class admin_setting_access_rules extends admin_setting {
 
         $body = '';
         foreach ($rules as $index => $rule) {
-            $body .= $this->row($index, access_rules::describe($rule));
+            $body .= $this->row($index, access_rules::describe($rule), $this->row_warning($rule, $rules, $index));
         }
 
         return html_writer::tag(
@@ -256,9 +272,10 @@ class admin_setting_access_rules extends admin_setting {
      *
      * @param int $index Position of the rule in the list.
      * @param string $sentence The rule, written out.
+     * @param string $warning What the rule repeats or is covered by, empty when it stands on its own.
      * @return string
      */
-    private function row(int $index, string $sentence): string {
+    private function row(int $index, string $sentence, string $warning = ''): string {
         $attributes = [
             'type' => 'submit',
             'class' => 'btn btn-secondary',
@@ -278,13 +295,75 @@ class admin_setting_access_rules extends admin_setting {
         return html_writer::tag(
             'tr',
             html_writer::tag('td', $index + 1, ['class' => 'local-wproofreader-rule-number'])
-            . html_writer::tag('td', $sentence)
+            . html_writer::tag('td', $sentence . $this->marker($warning))
             . html_writer::tag(
                 'td',
                 html_writer::tag('button', get_string('rule_remove', 'local_wproofreader'), $attributes),
                 ['class' => 'local-wproofreader-rule-actions']
             )
         );
+    }
+
+    /**
+     * What makes one row of the table redundant, if anything does.
+     *
+     * @param array $rule The rule the row is for.
+     * @param array[] $rules Every rule in the table.
+     * @param int $index Position of the rule in that list.
+     * @return string The warning, or an empty string.
+     */
+    private function row_warning(array $rule, array $rules, int $index): string {
+        $relations = access_rules::relations($rule, $rules, $index);
+
+        foreach (['repeats' => $relations['duplicates'], 'covered' => $relations['covered']] as $kind => $numbers) {
+            if ($numbers) {
+                return get_string(
+                    'rule_' . $kind . '_' . (count($numbers) > 1 ? 'many' : 'one'),
+                    'local_wproofreader',
+                    implode(', ', $numbers)
+                );
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * The icon that shows a warning when it is hovered or focused.
+     *
+     * The warning is in the markup either way, so that it is read out rather
+     * than only pointed at.
+     *
+     * @param string $warning What to say, empty for no marker at all.
+     * @return string
+     */
+    private function marker(string $warning): string {
+        if ($warning === '') {
+            return '';
+        }
+
+        return html_writer::tag(
+            'span',
+            html_writer::tag('span', 'i', ['aria-hidden' => 'true'])
+            . html_writer::tag('span', $warning, ['class' => 'local-wproofreader-rule-infobox']),
+            [
+                'class' => 'local-wproofreader-rule-info',
+                'tabindex' => '0',
+                'role' => 'note',
+                'aria-label' => get_string('rule_warning', 'local_wproofreader'),
+            ]
+        );
+    }
+
+    /**
+     * A translated string with a marker where its one placeholder goes.
+     *
+     * @param string $identifier String to fetch.
+     * @param string $marker Name of the marker to leave behind.
+     * @return string
+     */
+    private function template(string $identifier, string $marker): string {
+        return get_string($identifier, 'local_wproofreader', sprintf(self::PLACEHOLDER, $marker));
     }
 
     /**

@@ -15,8 +15,13 @@
 
 /**
  * Settings-page helper: keeps the access rules in the form while they are being
- * edited, so that adding and removing rules does not submit the page. The rules
- * travel in a hidden field and reach the database when the page is saved.
+ * edited, so that adding and removing rules does not submit the page, and says
+ * which rules repeat or take over which. The rules travel in a hidden field and
+ * reach the database when the page is saved.
+ *
+ * The wording of every sentence comes from the server, and so does the way one
+ * rule covers another, which is mirrored here so that the table answers before
+ * the page is saved. Keep both in step with access_rules::covers().
  *
  * @module     local_wproofreader/settings_rules
  * @copyright  2026 WebSpellChecker
@@ -25,6 +30,8 @@
 
 const SETTING_SELECTOR = '.local-wproofreader-rules-setting';
 const PARTS = ['role', 'feature', 'area'];
+const EVERYONE = 0;
+const ANY = '*';
 
 /**
  * Read the rules the form arrived with.
@@ -42,16 +49,47 @@ const readRules = (store) => {
 };
 
 /**
- * The display name a dropdown gives one stored value.
+ * Whether one rule already grants everything another one grants.
  *
- * @param {HTMLSelectElement} select Dropdown the value belongs to.
- * @param {string} value Value as stored.
- * @returns {string} The label, or the raw value when the dropdown has no such option.
+ * @param {object} wide The rule that may be the wider one.
+ * @param {object} narrow The rule that may be covered.
+ * @returns {boolean}
  */
-const labelOf = (select, value) => {
-    const option = Array.from(select.options).find((candidate) => candidate.value === String(value));
+const covers = (wide, narrow) => (wide.role === EVERYONE || wide.role === narrow.role)
+    && (wide.feature === ANY || wide.feature === narrow.feature)
+    && (wide.area === ANY || wide.area === narrow.area);
 
-    return option ? option.textContent : String(value);
+/**
+ * How one rule stands against a list of rules, by rule number.
+ *
+ * @param {object} rule The rule to weigh up.
+ * @param {Array} rules The rules to weigh it against.
+ * @param {number|null} self Position of the rule in that list, when it is one of them.
+ * @returns {object} Rule numbers under duplicates, covered and takesover.
+ */
+const relations = (rule, rules, self = null) => {
+    const found = {duplicates: [], covered: [], takesover: []};
+
+    rules.forEach((other, index) => {
+        if (index === self) {
+            return;
+        }
+
+        const wider = covers(other, rule);
+        const narrower = covers(rule, other);
+
+        if (wider && narrower) {
+            if (self === null || index < self) {
+                found.duplicates.push(index + 1);
+            }
+        } else if (wider) {
+            found.covered.push(index + 1);
+        } else if (narrower) {
+            found.takesover.push(index + 1);
+        }
+    });
+
+    return found;
 };
 
 export const init = (strings) => {
@@ -64,7 +102,8 @@ export const init = (strings) => {
     const store = root.querySelector('[data-rules-store]');
     const body = root.querySelector('[data-rules-body]');
     const table = root.querySelector('table');
-    const notice = root.querySelector('[data-rules-empty]');
+    const notice = root.querySelector('[data-rule-notice]');
+    const empty = root.querySelector('[data-rules-empty]');
     const addButton = root.querySelector('[data-rule-add]');
     const selects = {};
 
@@ -72,22 +111,65 @@ export const init = (strings) => {
         selects[part] = root.querySelector(`[data-rule-part="${part}"]`);
     });
 
-    if (!store || !body || !table || !notice || !addButton || PARTS.some((part) => !selects[part])) {
+    const missing = !store || !body || !table || !notice || !empty || !addButton
+        || PARTS.some((part) => !selects[part]);
+
+    if (missing) {
         return;
     }
 
     let rules = readRules(store);
 
-    const roleLabel = (role) => {
-        const option = Array.from(selects.role.options).find((candidate) => candidate.value === String(role));
+    const labelOf = (part, value) => {
+        const option = Array.from(selects[part].options).find((candidate) => candidate.value === String(value));
 
-        return option ? option.textContent : strings.missingRole;
+        if (option) {
+            return option.textContent;
+        }
+
+        return part === 'role' ? strings.missingRole : String(value);
     };
 
     const sentenceOf = (rule) => strings.sentence
-        .replace('@@ROLE@@', roleLabel(rule.role))
-        .replace('@@FEATURE@@', labelOf(selects.feature, rule.feature))
-        .replace('@@AREA@@', labelOf(selects.area, rule.area));
+        .replace('@@ROLE@@', labelOf('role', rule.role))
+        .replace('@@FEATURE@@', labelOf('feature', rule.feature))
+        .replace('@@AREA@@', labelOf('area', rule.area));
+
+    const phrase = (kind, numbers) => {
+        const key = kind + (numbers.length > 1 ? 'Many' : 'One');
+
+        return strings.warnings[key].replace('@@RULES@@', numbers.join(', '));
+    };
+
+    const warningOf = (rule, index) => {
+        const found = relations(rule, rules, index);
+
+        if (found.duplicates.length) {
+            return phrase('repeats', found.duplicates);
+        }
+
+        return found.covered.length ? phrase('covered', found.covered) : '';
+    };
+
+    const markerOf = (warning) => {
+        const marker = document.createElement('span');
+        marker.className = 'local-wproofreader-rule-info';
+        marker.tabIndex = 0;
+        marker.setAttribute('role', 'note');
+        marker.setAttribute('aria-label', strings.warningLabel);
+
+        const glyph = document.createElement('span');
+        glyph.setAttribute('aria-hidden', 'true');
+        glyph.textContent = 'i';
+
+        const infobox = document.createElement('span');
+        infobox.className = 'local-wproofreader-rule-infobox';
+        infobox.textContent = warning;
+
+        marker.append(glyph, infobox);
+
+        return marker;
+    };
 
     const rowOf = (rule, index) => {
         const sentence = sentenceOf(rule);
@@ -99,6 +181,12 @@ export const init = (strings) => {
 
         const text = document.createElement('td');
         text.textContent = sentence;
+
+        const warning = warningOf(rule, index);
+
+        if (warning) {
+            text.appendChild(markerOf(warning));
+        }
 
         const actions = document.createElement('td');
         actions.className = 'local-wproofreader-rule-actions';
@@ -122,23 +210,64 @@ export const init = (strings) => {
         store.value = JSON.stringify(rules);
         body.replaceChildren(...rules.map(rowOf));
         table.hidden = rules.length === 0;
-        notice.hidden = rules.length > 0;
+        empty.hidden = rules.length > 0;
+    };
+
+    /**
+     * The rule the dropdowns currently spell out, once all three are chosen.
+     *
+     * @returns {object|null} The rule, or null while the sentence is unfinished.
+     */
+    const chosen = () => {
+        const rule = {};
+
+        for (const part of PARTS) {
+            if (selects[part].value === '') {
+                return null;
+            }
+
+            rule[part] = part === 'role' ? Number(selects[part].value) : selects[part].value;
+        }
+
+        return rule;
+    };
+
+    const preview = () => {
+        const rule = chosen();
+        const found = rule ? relations(rule, rules) : null;
+
+        // A rule that repeats or is already covered takes nothing over that was
+        // not taken over already, so only the first of these is worth saying.
+        let said = '';
+
+        if (found && found.duplicates.length) {
+            said = phrase('repeats', found.duplicates);
+        } else if (found && found.covered.length) {
+            said = phrase('covered', found.covered);
+        } else if (found && found.takesover.length) {
+            said = phrase('takesover', found.takesover);
+        }
+
+        notice.textContent = said;
+        notice.hidden = said === '';
     };
 
     // The buttons submit the page when this module does not run, so they give
     // that up only now that it does.
     addButton.type = 'button';
 
+    PARTS.forEach((part) => {
+        selects[part].addEventListener('change', preview);
+    });
+
     addButton.addEventListener('click', () => {
-        const rule = {};
+        const rule = chosen();
 
-        for (const part of PARTS) {
-            if (selects[part].value === '') {
-                selects[part].focus();
-                return;
-            }
+        if (!rule) {
+            const unchosen = PARTS.find((part) => selects[part].value === '');
 
-            rule[part] = part === 'role' ? Number(selects[part].value) : selects[part].value;
+            selects[unchosen].focus();
+            return;
         }
 
         rules.push(rule);
@@ -146,6 +275,7 @@ export const init = (strings) => {
             selects[part].value = '';
         });
         render();
+        preview();
     });
 
     root.addEventListener('click', (event) => {
@@ -158,7 +288,9 @@ export const init = (strings) => {
         event.preventDefault();
         rules.splice(Number(remove.dataset.ruleRemove), 1);
         render();
+        preview();
     });
 
     render();
+    preview();
 };

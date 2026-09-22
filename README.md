@@ -91,6 +91,12 @@ The rules added so far are listed underneath the dropdowns, numbered in the
 order they were added, each with a button that removes it. Adding and removing
 change the page only: nothing is stored until *Save changes* is pressed.
 
+Nothing stops a rule that repeats another one, or that another one already
+covers. As soon as all three dropdowns are chosen, a bar above the table says
+how the rule being composed stands against the ones already listed, naming them
+by number, and any saved row that adds nothing is marked with an information
+icon carrying the same explanation.
+
 Roles are matched against the page being viewed. In *courses and activities*
 and *quiz attempts* that means the role the user holds in that course; in the
 other site parts, where no course role is in scope, it means any role the user
