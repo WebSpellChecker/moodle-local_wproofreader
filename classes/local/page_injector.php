@@ -49,11 +49,13 @@ class page_injector {
             return '';
         }
 
-        if (!context_evaluator::should_enable($PAGE)) {
+        $features = context_evaluator::allowed_features($PAGE);
+
+        if (!$features) {
             return '';
         }
 
-        $config = config_builder::build();
+        $config = config_builder::build($features);
         $bootstrap = json_encode($config, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
         $PAGE->requires->js_call_amd('local_wproofreader/init', 'init');

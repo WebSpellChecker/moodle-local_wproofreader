@@ -36,20 +36,20 @@ class config_builder {
     /**
      * Build the full configuration array passed to the AMD init function.
      *
+     * @param string[] $features Feature keys the access rules allow this user on this page.
      * @return array
      */
-    public static function build(): array {
+    public static function build(array $features): array {
         $serviceid = self::service_id();
         $isfree = self::is_free_edition($serviceid);
         $badgeenabled = self::is_badge_enabled();
 
-        // The access rules decide these per user and per page from step 2 on.
-        $spelling     = true;
-        $grammar      = true;
-        $style        = true;
-        $autocorrect  = true;
-        $autocomplete = true;
-        $aiassistant  = !$isfree;
+        $spelling     = in_array('spelling', $features, true);
+        $grammar      = in_array('grammar', $features, true);
+        $style        = in_array('style', $features, true);
+        $autocorrect  = in_array('autocorrect', $features, true);
+        $autocomplete = in_array('autocomplete', $features, true);
+        $aiassistant  = in_array('ai_writing_assistant', $features, true) && !$isfree;
 
         $ignoreallcaps    = self::feature_enabled('ignore_all_caps', true);
         $ignoredomains    = self::feature_enabled('ignore_domain_names', true);

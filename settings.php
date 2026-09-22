@@ -64,6 +64,19 @@ if ($hassiteconfig) {
             1
         ));
 
+        // Feature access rules section.
+        $settings->add(new admin_setting_heading(
+            'local_wproofreader/heading_rules',
+            get_string('settings_rules', 'local_wproofreader'),
+            get_string('settings_rules_desc', 'local_wproofreader')
+        ));
+
+        $settings->add(new \local_wproofreader\local\admin_setting_access_rules(
+            'local_wproofreader/access_rules',
+            get_string('access_rules', 'local_wproofreader'),
+            get_string('access_rules_desc', 'local_wproofreader')
+        ));
+
         // Spelling ignore options section.
         $settings->add(new admin_setting_heading(
             'local_wproofreader/heading_ignore',

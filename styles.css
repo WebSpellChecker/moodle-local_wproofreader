@@ -27,3 +27,19 @@
     font-weight: bold;
     color: #f0ad4e;
 }
+
+/*
+ * The rule builder reads as one sentence, so its dropdowns and the words
+ * between them stay on one line and wrap together on a narrow screen.
+ */
+.local-wproofreader-rule-builder {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.local-wproofreader-rule-builder select {
+    width: auto;
+    min-width: 12rem;
+}

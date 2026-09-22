@@ -5,6 +5,7 @@ All notable changes to the WProofreader plugin for Moodle are documented here.
 ## 2.1.0 (unreleased)
 
 * Removed the "Proofreading features" and "Where to enable WProofreader" settings sections. What they controlled is migrated on upgrade into access rules, which replace them.
+* Added the "Feature access rules" section, where each rule grants one role one proofreading feature on one part of the site. Rules add up, and are matched per page against the roles the user holds there.
 
 ## 2.0.0 (2026-08-20)
 
