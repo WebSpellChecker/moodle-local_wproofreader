@@ -155,7 +155,14 @@ class admin_setting_access_rules extends admin_setting {
             'removeLabel' => get_string('rule_remove', 'local_wproofreader'),
             'removeDescription' => $this->remove_description_template(),
             'missingRole' => get_string('rule_role_missing', 'local_wproofreader'),
-            'warningLabel' => get_string('rule_warning', 'local_wproofreader'),
+            'editLabel' => get_string('rule_edit', 'local_wproofreader'),
+            'editDescription' => $this->remove_description_template('rule_edit_label'),
+            'saveLabel' => get_string('rule_save', 'local_wproofreader'),
+            'cancelLabel' => get_string('rule_cancel', 'local_wproofreader'),
+            'showing' => get_string('rules_showing', 'local_wproofreader', (object) [
+                'shown' => sprintf(self::PLACEHOLDER, 'SHOWN'),
+                'total' => sprintf(self::PLACEHOLDER, 'TOTAL'),
+            ]),
             'warnings' => [
                 'repeatsOne' => $this->template('rule_repeats_one', 'RULES'),
                 'repeatsMany' => $this->template('rule_repeats_many', 'RULES'),
@@ -174,7 +181,7 @@ class admin_setting_access_rules extends admin_setting {
             . $this->dropdown('area', access_rules::area_options())
             . html_writer::tag('button', get_string('rule_add', 'local_wproofreader'), [
                 'type' => 'submit',
-                'class' => 'btn btn-secondary',
+                'class' => 'btn btn-primary',
                 'data-rule-add' => '1',
             ]),
             ['class' => 'local-wproofreader-rule-builder']
@@ -196,7 +203,7 @@ class admin_setting_access_rules extends admin_setting {
 
         $control = html_writer::tag(
             'div',
-            $store . $builder . $notice . $this->listing($rules) . $this->empty_notice($rules),
+            $store . $builder . $notice . $this->controls() . $this->listing($rules) . $this->empty_notice($rules),
             ['class' => 'local-wproofreader-rules-setting']
         );
 
@@ -233,6 +240,96 @@ class admin_setting_access_rules extends admin_setting {
         }
 
         return $data;
+    }
+
+    /**
+     * The filter and sort controls that sit above the table.
+     *
+     * They act on the page rather than on the stored rules, so they are hidden
+     * until the script that works them is running.
+     *
+     * @return string
+     */
+    private function controls(): string {
+        $filters = '';
+
+        $parts = [
+            'role' => access_rules::role_options(),
+            'feature' => access_rules::feature_options(),
+            'area' => access_rules::area_options(),
+        ];
+
+        foreach ($parts as $part => $options) {
+            $filters .= $this->control(
+                'filter_' . $part,
+                $options,
+                get_string('rules_filter_' . $part, 'local_wproofreader'),
+                get_string('rule_' . $part, 'local_wproofreader'),
+                ['data-rule-filter' => $part]
+            );
+        }
+
+        $sortable = [];
+        foreach (['role', 'feature', 'area'] as $part) {
+            $sortable[$part] = get_string('rule_' . $part, 'local_wproofreader');
+        }
+
+        $sort = $this->control(
+            'sort',
+            $sortable,
+            get_string('rules_sort_added', 'local_wproofreader'),
+            get_string('rules_sort', 'local_wproofreader'),
+            ['data-rule-sort' => '1'],
+            true
+        );
+
+        $filters = html_writer::tag(
+            'div',
+            html_writer::tag('span', get_string('rules_filter', 'local_wproofreader'), [
+                'class' => 'local-wproofreader-rules-label',
+            ]) . $filters,
+            ['class' => 'local-wproofreader-rules-group']
+        );
+
+        $sort = html_writer::tag('div', $sort, ['class' => 'local-wproofreader-rules-group']);
+
+        $count = html_writer::tag('span', '', [
+            'class' => 'local-wproofreader-rules-count text-muted',
+            'data-rules-count' => '1',
+        ]);
+
+        return html_writer::tag('div', $filters . $sort . $count, [
+            'class' => 'local-wproofreader-rules-controls',
+            'data-rules-controls' => '1',
+            'hidden' => 'hidden',
+        ]);
+    }
+
+    /**
+     * One dropdown of the filter and sort row.
+     *
+     * @param string $key Name to build the field id from.
+     * @param array $options Values against their display names.
+     * @param string $nothing Label of the option that picks nothing in particular.
+     * @param string $label Accessible label.
+     * @param array $attributes Extra attributes for the dropdown.
+     * @param bool $showlabel Whether the label is shown rather than read out only.
+     * @return string
+     */
+    private function control(
+        string $key,
+        array $options,
+        string $nothing,
+        string $label,
+        array $attributes,
+        bool $showlabel = false
+    ): string {
+        $id = $this->get_id() . '_' . $key;
+
+        return html_writer::tag('label', $label, [
+            'for' => $id,
+            'class' => $showlabel ? 'local-wproofreader-rules-label' : 'sr-only visually-hidden',
+        ]) . html_writer::select($options, '', '', ['' => $nothing], $attributes + ['id' => $id]);
     }
 
     /**
@@ -278,7 +375,7 @@ class admin_setting_access_rules extends admin_setting {
     private function row(int $index, string $sentence, string $warning = ''): string {
         $attributes = [
             'type' => 'submit',
-            'class' => 'btn btn-secondary',
+            'class' => 'btn btn-sm btn-outline-danger',
             'name' => $this->get_full_name() . '[remove]',
             'value' => $index,
             'data-rule-remove' => $index,
@@ -331,8 +428,8 @@ class admin_setting_access_rules extends admin_setting {
     /**
      * The icon that shows a warning when it is hovered or focused.
      *
-     * The warning is in the markup either way, so that it is read out rather
-     * than only pointed at.
+     * The warning is carried by the label rather than by the box it opens,
+     * because a hidden box is out of the accessibility tree until it is shown.
      *
      * @param string $warning What to say, empty for no marker at all.
      * @return string
@@ -345,12 +442,15 @@ class admin_setting_access_rules extends admin_setting {
         return html_writer::tag(
             'span',
             html_writer::tag('span', 'i', ['aria-hidden' => 'true'])
-            . html_writer::tag('span', $warning, ['class' => 'local-wproofreader-rule-infobox']),
+            . html_writer::tag('span', $warning, [
+                'class' => 'local-wproofreader-rule-infobox',
+                'aria-hidden' => 'true',
+            ]),
             [
                 'class' => 'local-wproofreader-rule-info',
                 'tabindex' => '0',
                 'role' => 'note',
-                'aria-label' => get_string('rule_warning', 'local_wproofreader'),
+                'aria-label' => $warning,
             ]
         );
     }
@@ -377,6 +477,10 @@ class admin_setting_access_rules extends admin_setting {
             'class' => 'local-wproofreader-rules-empty text-muted',
             'data-rules-empty' => '1',
             'hidden' => $rules ? 'hidden' : null,
+        ]) . html_writer::tag('p', get_string('rules_nomatch', 'local_wproofreader'), [
+            'class' => 'local-wproofreader-rules-empty text-muted',
+            'data-rules-nomatch' => '1',
+            'hidden' => 'hidden',
         ]);
     }
 
@@ -397,12 +501,13 @@ class admin_setting_access_rules extends admin_setting {
     }
 
     /**
-     * The accessible label of a remove button, with a marker where each part goes.
+     * The accessible label of a row button, with a marker where each part goes.
      *
+     * @param string $identifier String to fetch.
      * @return string
      */
-    private function remove_description_template(): string {
-        return get_string('rule_remove_label', 'local_wproofreader', (object) [
+    private function remove_description_template(string $identifier = 'rule_remove_label'): string {
+        return get_string($identifier, 'local_wproofreader', (object) [
             'number' => sprintf(self::PLACEHOLDER, 'NUMBER'),
             'sentence' => sprintf(self::PLACEHOLDER, 'SENTENCE'),
         ]);

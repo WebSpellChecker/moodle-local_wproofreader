@@ -91,6 +91,21 @@ The rules added so far are listed underneath the dropdowns, numbered in the
 order they were added, each with a button that removes it. Adding and removing
 change the page only: nothing is stored until *Save changes* is pressed.
 
+Above the table, a filter narrows the list by role, feature or site part, and a
+sort control reorders it by any of the three, in the order the dropdowns
+themselves list their values rather than alphabetically. Both act on the page
+only. Rule numbers belong to the rule rather than to the row it occupies, so
+sorting and filtering never change what a warning refers to.
+
+*Edit* turns a row into the same sentence in dropdowns, with *Save* and
+*Cancel* in place of the row's buttons. The rule keeps its number and its place
+in the list, and a warning bar inside the row reports how the edited version
+would stand while it is still being changed. Enter saves the row.
+
+The filter, the sort control and inline editing need JavaScript. Without it the
+table still lists and removes rules, and editing is a removal followed by adding
+the rule again.
+
 Nothing stops a rule that repeats another one, or that another one already
 covers. As soon as all three dropdowns are chosen, a bar above the table says
 how the rule being composed stands against the ones already listed, naming them
