@@ -153,9 +153,17 @@ class access_rules {
     /**
      * Roles to offer, as the value stored for each against its display name.
      *
+     * Held for the request, because every rule on the settings page asks for it.
+     *
      * @return array
      */
     public static function role_options(): array {
+        static $options = null;
+
+        if ($options !== null) {
+            return $options;
+        }
+
         $options = [self::EVERYONE => get_string('rule_everyone', 'local_wproofreader')];
 
         $roles = role_fix_names(get_all_roles(), \context_system::instance(), ROLENAME_ORIGINAL, true);
@@ -195,5 +203,23 @@ class access_rules {
         }
 
         return $options;
+    }
+
+    /**
+     * One rule written out as the sentence it stands for.
+     *
+     * @param array $rule A rule, as stored.
+     * @return string
+     */
+    public static function describe(array $rule): string {
+        $roles = self::role_options();
+        $features = self::feature_options();
+        $areas = self::area_options();
+
+        return get_string('rule_sentence', 'local_wproofreader', (object) [
+            'role' => $roles[$rule['role']] ?? get_string('rule_role_missing', 'local_wproofreader'),
+            'feature' => $features[$rule['feature']] ?? $rule['feature'],
+            'area' => $areas[$rule['area']] ?? $rule['area'],
+        ]);
     }
 }

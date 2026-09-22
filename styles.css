@@ -43,3 +43,20 @@
     width: auto;
     min-width: 12rem;
 }
+
+/*
+ * The rules table sits under the builder in the same setting, so it needs the
+ * separation a following setting would otherwise give it.
+ */
+.local-wproofreader-rules {
+    margin-top: 1rem;
+}
+
+.local-wproofreader-rules td:first-child,
+.local-wproofreader-rules th:first-child {
+    width: 3rem;
+}
+
+.local-wproofreader-rules-empty {
+    margin-top: 1rem;
+}

@@ -87,6 +87,10 @@ upgrading from 2.0.0 keeps the reach its old toggles gave it.
 | Feature   | *do everything*, check spelling, check grammar, apply style suggestions, autocorrect text, autocomplete text, use the AI writing assistant. |
 | Site part | *everywhere*, in courses and activities, in quiz attempts, in course categories, on user pages, on system pages, in site administration. |
 
+The rules added so far are listed underneath the dropdowns, numbered in the
+order they were added, each with a button that removes it. Adding and removing
+change the page only: nothing is stored until *Save changes* is pressed.
+
 Roles are matched against the page being viewed. In *courses and activities*
 and *quiz attempts* that means the role the user holds in that course; in the
 other site parts, where no course role is in scope, it means any role the user
