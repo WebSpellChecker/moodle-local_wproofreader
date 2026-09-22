@@ -64,31 +64,6 @@ if ($hassiteconfig) {
             1
         ));
 
-        // Proofreading features section.
-        $settings->add(new admin_setting_heading(
-            'local_wproofreader/heading_features',
-            get_string('settings_features', 'local_wproofreader'),
-            get_string('settings_features_desc', 'local_wproofreader')
-        ));
-
-        $featuretoggles = [
-            'enable_spelling'             => 1,
-            'enable_grammar'              => 1,
-            'enable_style'                => 1,
-            'enable_autocorrect'          => 0,
-            'enable_autocomplete'         => 0,
-            'enable_ai_writing_assistant' => 1,
-        ];
-
-        foreach ($featuretoggles as $name => $default) {
-            $settings->add(new admin_setting_configcheckbox(
-                'local_wproofreader/' . $name,
-                get_string($name, 'local_wproofreader'),
-                get_string($name . '_desc', 'local_wproofreader'),
-                $default
-            ));
-        }
-
         // Spelling ignore options section.
         $settings->add(new admin_setting_heading(
             'local_wproofreader/heading_ignore',
@@ -111,55 +86,6 @@ if ($hassiteconfig) {
                 $default
             ));
         }
-
-        // Context section.
-        $settings->add(new admin_setting_heading(
-            'local_wproofreader/heading_contexts',
-            get_string('settings_contexts', 'local_wproofreader'),
-            get_string('settings_contexts_desc', 'local_wproofreader')
-        ));
-
-        $settings->add(new admin_setting_configcheckbox(
-            'local_wproofreader/enable_in_courses',
-            get_string('enable_in_courses', 'local_wproofreader'),
-            get_string('enable_in_courses_desc', 'local_wproofreader'),
-            1
-        ));
-
-        $settings->add(new admin_setting_configcheckbox(
-            'local_wproofreader/enable_in_categories',
-            get_string('enable_in_categories', 'local_wproofreader'),
-            get_string('enable_in_categories_desc', 'local_wproofreader'),
-            1
-        ));
-
-        $settings->add(new admin_setting_configcheckbox(
-            'local_wproofreader/enable_on_users',
-            get_string('enable_on_users', 'local_wproofreader'),
-            get_string('enable_on_users_desc', 'local_wproofreader'),
-            1
-        ));
-
-        $settings->add(new admin_setting_configcheckbox(
-            'local_wproofreader/enable_on_quiz',
-            get_string('enable_on_quiz', 'local_wproofreader'),
-            get_string('enable_on_quiz_desc', 'local_wproofreader'),
-            0
-        ));
-
-        $settings->add(new admin_setting_configcheckbox(
-            'local_wproofreader/enable_on_frontend',
-            get_string('enable_on_frontend', 'local_wproofreader'),
-            get_string('enable_on_frontend_desc', 'local_wproofreader'),
-            0
-        ));
-
-        $settings->add(new admin_setting_configcheckbox(
-            'local_wproofreader/enable_in_admin',
-            get_string('enable_in_admin', 'local_wproofreader'),
-            get_string('enable_in_admin_desc', 'local_wproofreader'),
-            0
-        ));
 
         // Editor info.
         $settings->add(new \local_wproofreader\local\settings_page_heading(

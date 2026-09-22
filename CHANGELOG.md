@@ -2,6 +2,10 @@
 
 All notable changes to the WProofreader plugin for Moodle are documented here.
 
+## 2.1.0 (unreleased)
+
+* Removed the "Proofreading features" and "Where to enable WProofreader" settings sections. What they controlled is migrated on upgrade into access rules, which replace them.
+
 ## 2.0.0 (2026-08-20)
 
 * Widened official Moodle support to 4.1 through the 5.2 branch (previously 4.5 LTS through 5.2).

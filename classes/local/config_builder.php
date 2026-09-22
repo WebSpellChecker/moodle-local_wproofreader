@@ -43,12 +43,13 @@ class config_builder {
         $isfree = self::is_free_edition($serviceid);
         $badgeenabled = self::is_badge_enabled();
 
-        $spelling     = self::feature_enabled('enable_spelling', true);
-        $grammar      = self::feature_enabled('enable_grammar', true);
-        $style        = self::feature_enabled('enable_style', true);
-        $autocorrect  = self::feature_enabled('enable_autocorrect', false);
-        $autocomplete = self::feature_enabled('enable_autocomplete', false);
-        $aiassistant  = self::feature_enabled('enable_ai_writing_assistant', true) && !$isfree;
+        // The access rules decide these per user and per page from step 2 on.
+        $spelling     = true;
+        $grammar      = true;
+        $style        = true;
+        $autocorrect  = true;
+        $autocomplete = true;
+        $aiassistant  = !$isfree;
 
         $ignoreallcaps    = self::feature_enabled('ignore_all_caps', true);
         $ignoredomains    = self::feature_enabled('ignore_domain_names', true);
@@ -129,7 +130,7 @@ class config_builder {
             'servicePath'     => 'api',
             'servicePort'     => '443',
             'appType'         => 'wpr_moodle',
-            'enableGrammar'   => self::feature_enabled('enable_grammar', true),
+            'enableGrammar'   => true,
             'autoOption'      => language_catalog::AUTO_OPTION,
             'autoLabel'       => get_string('lang_auto', 'local_wproofreader'),
             'usageLimitExceededMessage' => get_string('usage_limit_exceeded', 'local_wproofreader'),

@@ -71,17 +71,6 @@ All settings live under *Site administration > Plugins > Local plugins > WProofr
 | Default language     | Auto        | Initial proofreading language. *Auto* lets the WebSpellChecker service detect the language from the content being checked; pick a specific language to pin it. The dropdown is refreshed live from the service when the settings page loads. |
 | Show badge button    | enabled     | Toggles the orange WProofreader badge on or off. A separate badge attaches to each editor on the page. |
 
-### Proofreading features
-
-| Setting              | Default   | Maps to (bundle keys) |
-|----------------------|-----------|------------------------|
-| Spelling             | enabled   | `spellingSuggestions` |
-| Grammar              | enabled   | `enableGrammar` + `grammarSuggestions` |
-| Style                | enabled   | `styleGuideSuggestions` |
-| Autocorrect          | disabled  | `autocorrect` |
-| Text autocomplete    | disabled  | `autocomplete` |
-| AI writing assistant | enabled   | `aiWritingAssistant` (paid only) |
-
 ### Spelling ignore options
 
 | Setting                          | Default   | Maps to (bundle keys)       |
@@ -91,20 +80,9 @@ All settings live under *Site administration > Plugins > Local plugins > WProofr
 | Ignore words with mixed case     | enabled   | `ignoreWordsWithMixedCases` |
 | Ignore words with numbers        | enabled   | `ignoreWordsWithNumbers`    |
 
-### Where to enable WProofreader
-
-| Setting                          | Default  | Maps to |
-|----------------------------------|----------|---------|
-| Enable in courses and activities | enabled  | `CONTEXT_COURSE`, `CONTEXT_MODULE` (excluding quiz / feedback) |
-| Enable in course categories      | enabled  | `CONTEXT_COURSECAT` |
-| Enable on user pages             | enabled  | `CONTEXT_USER` (profile, dashboard, personal blog) |
-| Enable in quiz attempts          | disabled | `mod_quiz`, `mod_questionnaire`, `mod_feedback` |
-| Enable on system pages           | disabled | `CONTEXT_SYSTEM` pages such as the global calendar, global search, and system tag browsing. The site front page itself is treated as a course and falls under *Enable in courses and activities*. |
-| Enable in site administration    | disabled | Pages with a `pagetype` that starts with `admin-` |
-
 ## How it works
 
-* On each page render, the plugin checks the per-context toggles, emits an inline bootstrap script with the proofreader config, and queues an AMD module to start.
+* On each page render, the plugin checks the `local/wproofreader:use` capability, emits an inline bootstrap script with the proofreader config, and queues an AMD module to start.
 * The AMD module loads the WProofreader JS library from `svc.webspellchecker.net` and attaches it to Atto, TinyMCE, and plain HTML textareas on the page.
 * The settings page refreshes the supported-language list from the service when opened, and caches it server-side for the next render.
 
