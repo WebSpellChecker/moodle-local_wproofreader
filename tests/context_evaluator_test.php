@@ -192,6 +192,42 @@ final class context_evaluator_test extends \advanced_testcase {
     }
 
     /**
+     * Switching role keeps the role every logged-in user holds, as core does.
+     *
+     * @return void
+     */
+    public function test_a_switched_role_keeps_the_default_user_role(): void {
+        global $CFG;
+
+        $this->resetAfterTest();
+
+        $course = $this->getDataGenerator()->create_course();
+        $context = \context_course::instance($course->id);
+        $user = $this->getDataGenerator()->create_user();
+        $teaching = $this->getDataGenerator()->create_role();
+        $studying = $this->getDataGenerator()->create_role();
+
+        $this->getDataGenerator()->enrol_user($user->id, $course->id, $teaching);
+        $this->setUser($user);
+
+        $this->store([
+            [(int) $CFG->defaultuserroleid, 'spelling', context_evaluator::AREA_COURSES],
+            [$studying, 'grammar', context_evaluator::AREA_COURSES],
+            [$teaching, 'style', context_evaluator::AREA_COURSES],
+        ]);
+
+        $this->assertSame(['spelling', 'style'], context_evaluator::allowed_features(
+            $this->page($context, 'course-view')
+        ));
+
+        role_switch($studying, $context);
+
+        $this->assertSame(['spelling', 'grammar'], context_evaluator::allowed_features(
+            $this->page($context, 'course-view')
+        ));
+    }
+
+    /**
      * Pages with no editor never load the plugin, whatever the rules say.
      *
      * @return void

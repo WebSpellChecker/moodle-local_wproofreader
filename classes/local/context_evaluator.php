@@ -81,19 +81,22 @@ class context_evaluator {
         global $CFG;
 
         $blocked = [];
+        $roles = get_all_roles();
         $admins = get_roles_with_capability('moodle/site:configview', CAP_ALLOW, \context_system::instance());
 
-        foreach (array_keys(array_diff_key(get_all_roles(), $admins)) as $roleid) {
+        foreach (array_keys(array_diff_key($roles, $admins)) as $roleid) {
             $blocked[(int) $roleid] = [self::AREA_ADMIN];
         }
 
         $frontpage = (int) ($CFG->defaultfrontpageroleid ?? 0);
 
-        if ($frontpage) {
+        // Only the dedicated front page role is confined to the site home, where
+        // core applies it through config rather than assignment. A site that points
+        // the setting at an ordinary role still holds that role wherever it is
+        // assigned, and rules naming it do take effect there.
+        if ($frontpage && ($roles[$frontpage]->archetype ?? '') === 'frontpage') {
             // Every non-course area, which already covers site administration and
-            // so replaces any entry the capability loop made. This holds whatever
-            // the role can open: roleids_for() skips the front page role outside
-            // the course areas, so it can never match there.
+            // so replaces any entry the capability loop made.
             $blocked[$frontpage] = array_values(array_diff(self::AREAS, self::COURSE_AREAS));
         }
 
@@ -167,8 +170,12 @@ class context_evaluator {
 
         $userid = (int) $USER->id;
 
-        if ($switched = self::switched_role($context)) {
-            return [$switched];
+        if (($switched = self::switched_role($context)) && !isguestuser()) {
+            // Core weighs the switched role plus the default user role, which the
+            // accessdata below already carries for everyone else.
+            $default = (int) ($CFG->defaultuserroleid ?? 0);
+
+            return $default ? [$switched, $default] : [$switched];
         }
 
         if (isguestuser() && !empty($CFG->guestroleid)) {

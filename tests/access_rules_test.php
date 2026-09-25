@@ -183,6 +183,31 @@ final class access_rules_test extends \advanced_testcase {
     }
 
     /**
+     * An ordinary role named as the front page role still reaches every area.
+     *
+     * @return void
+     */
+    public function test_an_ordinary_front_page_role_is_not_narrowed(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+
+        $student = (int) $DB->get_field('role', 'id', ['shortname' => 'student']);
+        set_config('defaultfrontpageroleid', $student);
+
+        // Core applies this role at the site home through config, but the site
+        // still holds it wherever it is assigned, so its rules do take effect.
+        $this->assertFalse(access_rules::is_unreachable($student, context_evaluator::AREA_USERS));
+        $this->assertNotNull(access_rules::make($student, 'spelling', context_evaluator::AREA_USERS));
+
+        // The dedicated role is the one that never leaves the site home.
+        $frontpage = (int) $DB->get_field('role', 'id', ['shortname' => 'frontpage']);
+        set_config('defaultfrontpageroleid', $frontpage);
+
+        $this->assertTrue(access_rules::is_unreachable($frontpage, context_evaluator::AREA_USERS));
+    }
+
+    /**
      * An unreachable rule already stored is still readable, so saves keep working.
      *
      * @return void
