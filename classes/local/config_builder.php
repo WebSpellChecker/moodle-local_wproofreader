@@ -36,19 +36,20 @@ class config_builder {
     /**
      * Build the full configuration array passed to the AMD init function.
      *
+     * @param string[] $features Feature keys the access rules allow this user on this page.
      * @return array
      */
-    public static function build(): array {
+    public static function build(array $features): array {
         $serviceid = self::service_id();
         $isfree = self::is_free_edition($serviceid);
         $badgeenabled = self::is_badge_enabled();
 
-        $spelling     = self::feature_enabled('enable_spelling', true);
-        $grammar      = self::feature_enabled('enable_grammar', true);
-        $style        = self::feature_enabled('enable_style', true);
-        $autocorrect  = self::feature_enabled('enable_autocorrect', false);
-        $autocomplete = self::feature_enabled('enable_autocomplete', false);
-        $aiassistant  = self::feature_enabled('enable_ai_writing_assistant', true) && !$isfree;
+        $spelling     = in_array('spelling', $features, true);
+        $grammar      = in_array('grammar', $features, true);
+        $style        = in_array('style', $features, true);
+        $autocorrect  = in_array('autocorrect', $features, true);
+        $autocomplete = in_array('autocomplete', $features, true);
+        $aiassistant  = in_array('ai_writing_assistant', $features, true) && !$isfree;
 
         $ignoreallcaps    = self::feature_enabled('ignore_all_caps', true);
         $ignoredomains    = self::feature_enabled('ignore_domain_names', true);
@@ -129,7 +130,7 @@ class config_builder {
             'servicePath'     => 'api',
             'servicePort'     => '443',
             'appType'         => 'wpr_moodle',
-            'enableGrammar'   => self::feature_enabled('enable_grammar', true),
+            'enableGrammar'   => true,
             'autoOption'      => language_catalog::AUTO_OPTION,
             'autoLabel'       => get_string('lang_auto', 'local_wproofreader'),
             'usageLimitExceededMessage' => get_string('usage_limit_exceeded', 'local_wproofreader'),
