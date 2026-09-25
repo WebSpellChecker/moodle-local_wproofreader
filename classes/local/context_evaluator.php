@@ -61,17 +61,6 @@ class context_evaluator {
     ];
 
     /**
-     * Capability a role needs before it can open an area at all.
-     *
-     * Areas any signed-in user can reach are absent. Site administration is
-     * gated by Moodle itself, so a role without this capability cannot open one
-     * of its pages.
-     *
-     * @var array
-     */
-    private const AREA_CAPABILITIES = [self::AREA_ADMIN => 'moodle/site:configview'];
-
-    /**
      * Areas rendered inside a course, where a course role assignment applies.
      *
      * Roles are resolved against the page context in these areas, so being a
@@ -103,28 +92,20 @@ class context_evaluator {
         global $CFG;
 
         $blocked = [];
-        $system = \context_system::instance();
+        $admins = get_roles_with_capability('moodle/site:configview', CAP_ALLOW, \context_system::instance());
 
-        foreach (self::AREA_CAPABILITIES as $area => $capability) {
-            $allowed = array_keys(get_roles_with_capability($capability, CAP_ALLOW, $system));
-
-            foreach (array_keys(get_all_roles()) as $roleid) {
-                if (!in_array($roleid, $allowed)) {
-                    $blocked[(int) $roleid][] = $area;
-                }
-            }
+        foreach (array_keys(array_diff_key(get_all_roles(), $admins)) as $roleid) {
+            $blocked[(int) $roleid] = [self::AREA_ADMIN];
         }
 
         $frontpage = (int) ($CFG->defaultfrontpageroleid ?? 0);
 
         if ($frontpage) {
-            foreach (array_diff(self::AREAS, self::COURSE_AREAS) as $area) {
-                $blocked[$frontpage][] = $area;
-            }
-        }
-
-        foreach ($blocked as $roleid => $areas) {
-            $blocked[$roleid] = array_values(array_unique($areas));
+            // Every non-course area, which already covers site administration and
+            // so replaces any entry the capability loop made. This holds whatever
+            // the role can open: roleids_for() skips the front page role outside
+            // the course areas, so it can never match there.
+            $blocked[$frontpage] = array_values(array_diff(self::AREAS, self::COURSE_AREAS));
         }
 
         return $blocked;
@@ -188,13 +169,14 @@ class context_evaluator {
     /**
      * Role ids the current user holds, as they apply to the given area.
      *
-     * `get_user_roles_with_special()` is used inside courses because it adds
-     * the authenticated user and front page roles, which are applied through
-     * config rather than stored as role assignments. Outside courses the same
-     * roles come from the accessdata, so that being a student somewhere still
-     * counts on a page where no course role is in scope. That is read through
-     * `get_user_accessdata()`, which holds the answer for the request, rather
-     * than through the uncached query underneath it: this runs on every page.
+     * Both answers come from `get_user_accessdata()`, which the request already
+     * holds, rather than from `get_user_roles_with_special()`, whose query is
+     * uncached and would run on every course page. The accessdata carries the
+     * authenticated user and front page roles too, so nothing is lost. Inside a
+     * course the paths are filtered to the course and its ancestors; elsewhere
+     * every role the user holds anywhere counts, so that being a student
+     * somewhere still means something on a page where no course role is in
+     * scope.
      *
      * The guest role is added by hand, since neither helper reports it. Nobody
      * logged in has no roles either: the accessdata answers with the role the
@@ -222,25 +204,23 @@ class context_evaluator {
 
         $roleids = [];
 
-        if ($userid && in_array($area, self::COURSE_AREAS, true)) {
-            foreach (get_user_roles_with_special($context, $userid) as $assignment) {
-                $roleids[] = (int) $assignment->roleid;
-            }
-
-            return array_values(array_unique($roleids));
-        }
-
-        $accessdata = get_user_accessdata($userid);
+        $incourse = in_array($area, self::COURSE_AREAS, true);
 
         // The accessdata carries the front page role at the front page path, where
         // it is applied through config rather than assigned. It only means anything
-        // on the site home, which is a course area, so it is skipped here.
+        // on the site home, which is a course area, so it is skipped elsewhere.
         $frontpage = (int) ($CFG->defaultfrontpageroleid ?? 0);
         $frontpagepath = $frontpage ? \context_course::instance(SITEID)->path : '';
 
-        foreach ($accessdata['ra'] as $path => $assigned) {
+        foreach (get_user_accessdata($userid)['ra'] as $path => $assigned) {
+            // Inside a course only the roles held there and above it count. The
+            // path comparison is anchored so that /1/2 does not match /1/23.
+            if ($incourse && strpos($context->path . '/', $path . '/') !== 0) {
+                continue;
+            }
+
             foreach ($assigned as $roleid) {
-                if ((int) $roleid === $frontpage && $path === $frontpagepath) {
+                if (!$incourse && (int) $roleid === $frontpage && $path === $frontpagepath) {
                     continue;
                 }
 
@@ -263,9 +243,18 @@ class context_evaluator {
     private static function switched_role(\context $context): int {
         global $USER;
 
-        foreach ($USER->access['rsw'] ?? [] as $path => $roleid) {
-            if (strpos($context->path, $path) === 0) {
-                return (int) $roleid;
+        $switches = $USER->access['rsw'] ?? [];
+
+        if (!$switches) {
+            return 0;
+        }
+
+        // Nearest first, so a switch made in the activity wins over one made in
+        // the course around it. The paths come from core rather than from a
+        // prefix test, which would match /1/23 against a switch at /1/2.
+        foreach (array_reverse($context->get_parent_context_paths(true)) as $path) {
+            if (isset($switches[$path])) {
+                return (int) $switches[$path];
             }
         }
 

@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $string['access_rules'] = 'Add a rule';
-$string['access_rules_desc'] = 'Complete the sentence, then save the page to add the rule. Rules only grant access, so a user gets a feature wherever at least one rule allows it, and a site with no rules runs no proofreading at all.';
+$string['access_rules_desc'] = 'Rules only grant access: a user gets a feature wherever at least one rule allows it. Settings from an earlier version of the plugin are migrated into rules when the site is upgraded. The AI writing assistant needs a paid license key and stays off on the free version, whatever the rules say.';
 $string['area_admin'] = 'in site administration';
 $string['area_categories'] = 'in course categories';
 $string['area_courses'] = 'in courses and activities';
@@ -85,6 +85,7 @@ $string['rule_sentence'] = '{$a->role} is allowed to {$a->feature} {$a->area}';
 $string['rule_takesover_many'] = 'Takes over rules {$a}, which would then add nothing.';
 $string['rule_takesover_one'] = 'Takes over rule {$a}, which would then add nothing.';
 $string['rule_unknown_value'] = 'The rule was not added: one of the values picked no longer exists.';
+$string['rule_unreachable'] = 'The rule was not added: the {$a->role} role can never reach {$a->area}, so no rule could grant anything there.';
 $string['rules_actions'] = 'Actions';
 $string['rules_filter'] = 'Filter';
 $string['rules_filter_area'] = 'Any site part';

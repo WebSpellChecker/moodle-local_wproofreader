@@ -16,6 +16,10 @@
 
 namespace local_wproofreader;
 
+defined('MOODLE_INTERNAL') || die();
+
+require_once(__DIR__ . '/rule_fixtures_trait.php');
+
 use local_wproofreader\local\access_rules;
 use local_wproofreader\local\context_evaluator;
 
@@ -28,17 +32,7 @@ use local_wproofreader\local\context_evaluator;
  * @covers     \local_wproofreader\local\context_evaluator
  */
 final class context_evaluator_test extends \advanced_testcase {
-    /**
-     * Store a list of rules, written the short way.
-     *
-     * @param array $rules Each rule as role, feature and area.
-     * @return void
-     */
-    private function store(array $rules): void {
-        set_config('access_rules', json_encode(array_map(function (array $rule): array {
-            return ['role' => $rule[0], 'feature' => $rule[1], 'area' => $rule[2]];
-        }, $rules)), 'local_wproofreader');
-    }
+    use rule_fixtures_trait;
 
     /**
      * A page set to the given context and pagetype.

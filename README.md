@@ -85,16 +85,15 @@ upgrading from 2.0.0 keeps the reach its old toggles gave it.
 |-----------|--------|
 | Role      | *Everyone*, plus every role defined on the site. |
 | Feature   | *do everything*, check spelling, check grammar, apply style suggestions, autocorrect text, autocomplete text, use the AI writing assistant. |
-| Site part | *everywhere*, in courses and activities, in quiz attempts, in course categories, on user pages, on system pages, in site administration. |
+| Site part | *everywhere*, in courses and activities, in quiz attempts, in course categories, on user pages, on system pages, in site administration. The list is narrowed to what the chosen role can open, and a role that cannot reach every site part is not offered *everywhere* either. |
 
 The rules added so far are listed underneath the dropdowns, numbered in the
 order they were added, each with a button that removes it. Adding and removing
 change the page only: nothing is stored until *Save changes* is pressed.
 
 Above the table, a filter narrows the list by role, feature or site part, and a
-sort control reorders it by any of the three, in the order the dropdowns
-themselves list their values rather than alphabetically. Both act on the page
-only. Rule numbers belong to the rule rather than to the row it occupies, so
+sort control reorders it by any of the three, alphabetically by the words the
+rows actually read. Both act on the page only. Rule numbers belong to the rule rather than to the row it occupies, so
 sorting and filtering never change what a warning refers to.
 
 *Edit* turns a row into the same sentence in dropdowns, with *Save* and
@@ -102,9 +101,7 @@ sorting and filtering never change what a warning refers to.
 in the list, and a warning bar inside the row reports how the edited version
 would stand while it is still being changed. Enter saves the row.
 
-The filter, the sort control and inline editing need JavaScript. Without it the
-table still lists and removes rules, and editing is a removal followed by adding
-the rule again.
+The rules table is drawn in the browser, so the section needs JavaScript.
 
 Nothing stops a rule that repeats another one, or that another one already
 covers. As soon as all three dropdowns are chosen, a bar above the table says

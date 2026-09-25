@@ -14,32 +14,25 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
+namespace local_wproofreader;
+
 /**
- * Install steps for local_wproofreader.
+ * Writes a list of rules for a test, spelled the short way.
  *
  * @package    local_wproofreader
  * @copyright  2026 WebSpellChecker
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
-/**
- * Seed the access rules on a fresh install.
- *
- * Rules only grant, so a site with none proofreads nothing. One rule that
- * covers everyone, every feature and every area is what makes the plugin work
- * as soon as it is installed. Sites that upgrade keep the reach they had, which
- * db/upgrade.php migrates instead.
- *
- * @return bool
- */
-function xmldb_local_wproofreader_install(): bool {
-    $everything = [
-        'role' => \local_wproofreader\local\access_rules::EVERYONE,
-        'feature' => \local_wproofreader\local\access_rules::ANY,
-        'area' => \local_wproofreader\local\access_rules::ANY,
-    ];
-
-    set_config(\local_wproofreader\local\access_rules::SETTING, json_encode([$everything]), 'local_wproofreader');
-
-    return true;
+trait rule_fixtures_trait {
+    /**
+     * Store a list of rules, each given as role, feature and area.
+     *
+     * @param array $rules Each rule as a three-element list.
+     * @return void
+     */
+    private function store(array $rules): void {
+        set_config('access_rules', json_encode(array_map(function (array $rule): array {
+            return ['role' => $rule[0], 'feature' => $rule[1], 'area' => $rule[2]];
+        }, $rules)), 'local_wproofreader');
+    }
 }

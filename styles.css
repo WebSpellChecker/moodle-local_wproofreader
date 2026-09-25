@@ -28,18 +28,18 @@
     color: #f0ad4e;
 }
 
+/* The words between the dropdowns of a sentence. */
+.local-wproofreader-rule-builder > span,
+.local-wproofreader-rule-edit > span {
+    color: #6c757d;
+}
+
 /* Every dropdown in this section sizes to its content and never overflows. */
 .local-wproofreader-rule-builder select,
 .local-wproofreader-rules-controls select,
 .local-wproofreader-rule-edit select {
     width: auto;
     max-width: 100%;
-}
-
-/* The words between the dropdowns of a sentence. */
-.local-wproofreader-rule-builder > span,
-.local-wproofreader-rule-edit > span {
-    color: #6c757d;
 }
 
 /*

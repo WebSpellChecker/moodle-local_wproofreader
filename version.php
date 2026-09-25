@@ -25,8 +25,8 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_wproofreader';
-$plugin->version   = 2026092200;
-$plugin->release   = '2.1.0';
+$plugin->version   = 2026092500;
+$plugin->release   = '2.2.0';
 $plugin->requires  = 2022112800;
 $plugin->supported = [41, 52];
 $plugin->maturity  = MATURITY_STABLE;

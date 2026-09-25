@@ -37,14 +37,36 @@ class access_rules {
     /** @var string Plugin setting the rules live in. */
     public const SETTING = 'access_rules';
 
-    /** @var string[] Proofreading features a rule can grant. */
+    /** @var string Spell checking. */
+    public const FEATURE_SPELLING = 'spelling';
+
+    /** @var string Grammar checking. */
+    public const FEATURE_GRAMMAR = 'grammar';
+
+    /** @var string Style guide suggestions. */
+    public const FEATURE_STYLE = 'style';
+
+    /** @var string Automatic correction of unambiguous misspellings. */
+    public const FEATURE_AUTOCORRECT = 'autocorrect';
+
+    /** @var string Word completion as the user types. */
+    public const FEATURE_AUTOCOMPLETE = 'autocomplete';
+
+    /** @var string The AI writing assistant, which also needs a paid licence. */
+    public const FEATURE_AI = 'ai_writing_assistant';
+
+    /**
+     * Proofreading features a rule can grant, in the order the builder lists them.
+     *
+     * @var string[]
+     */
     public const FEATURES = [
-        'spelling',
-        'grammar',
-        'style',
-        'autocorrect',
-        'autocomplete',
-        'ai_writing_assistant',
+        self::FEATURE_SPELLING,
+        self::FEATURE_GRAMMAR,
+        self::FEATURE_STYLE,
+        self::FEATURE_AUTOCORRECT,
+        self::FEATURE_AUTOCOMPLETE,
+        self::FEATURE_AI,
     ];
 
     /**
@@ -53,16 +75,39 @@ class access_rules {
      * @return array[] Each rule as role, feature and area.
      */
     public static function all(): array {
-        return self::decode((string) get_config('local_wproofreader', self::SETTING)) ?? [];
+        $stored = json_decode((string) get_config('local_wproofreader', self::SETTING), true);
+
+        if (!is_array($stored)) {
+            return [];
+        }
+
+        $rules = [];
+
+        // Reading skips what it cannot make sense of rather than refusing the
+        // whole list. A single rule naming something this version does not know,
+        // after a downgrade or a hand edit, must not switch the plugin off site
+        // wide and then be written over on the next save.
+        foreach ($stored as $rule) {
+            $normalized = is_array($rule)
+                ? self::normalize($rule['role'] ?? null, $rule['feature'] ?? null, $rule['area'] ?? null)
+                : null;
+
+            if ($normalized !== null) {
+                $rules[] = $normalized;
+            }
+        }
+
+        return $rules;
     }
 
     /**
-     * Read a stored list of rules.
+     * Read a submitted list of rules, refusing the lot if any of it is unknown.
      *
-     * Roles are not checked against the site here. A rule naming a role that has
-     * since been deleted matches nobody, so it is harmless, and refusing to read
-     * it would strand the administrator: the list travels back with the settings
-     * form, so one stale rule would make every later save fail.
+     * This is the write path, where a payload that does not parse is not to be
+     * guessed at. Reading what is already stored is deliberately more forgiving:
+     * see all(). Roles are not checked here either way, because a rule naming a
+     * deleted role matches nobody and refusing it would make every later save
+     * fail.
      *
      * @param string $json The list as it was stored.
      * @return array[]|null The rules, or null when the list itself is not readable.
@@ -110,7 +155,37 @@ class access_rules {
             return null;
         }
 
-        return self::normalize($role, $feature, $area);
+        $rule = self::normalize($role, $feature, $area);
+
+        if ($rule && self::is_unreachable($rule['role'], $rule['area'])) {
+            return null;
+        }
+
+        return $rule;
+    }
+
+    /**
+     * Whether a role could never match in an area, so a rule pairing them is inert.
+     *
+     * Checked when a rule is written, not when one is read: a pairing that has
+     * become unreachable since, because a role lost a capability, keeps working
+     * as far as it can and stays in the table rather than blocking every save.
+     *
+     * @param int $role Role the rule names.
+     * @param string $area Area the rule names.
+     * @return bool
+     */
+    public static function is_unreachable(int $role, string $area): bool {
+        if ($role === self::EVERYONE) {
+            return false;
+        }
+
+        $blocked = context_evaluator::unreachable_areas()[$role] ?? [];
+
+        // A rule naming everywhere is inert only if the role is shut out of all of it.
+        return $area === self::ANY
+            ? count($blocked) === count(context_evaluator::AREAS)
+            : in_array($area, $blocked, true);
     }
 
     /**
@@ -173,7 +248,7 @@ class access_rules {
     public static function role_options(): array {
         static $options = null;
 
-        if ($options === null) {
+        if ($options === null || PHPUNIT_TEST) {
             $options = [self::EVERYONE => get_string('rule_everyone', 'local_wproofreader')];
 
             foreach (role_get_names(\context_system::instance(), ROLENAME_ORIGINAL, true) as $roleid => $rolename) {
@@ -206,7 +281,7 @@ class access_rules {
      * One list of things to offer, led by the option that means all of them.
      *
      * Held for the request, because the settings page asks for each list several
-     * times over: the builder, the filter row, and every rule it writes out.
+     * times over: the builder and the filter row.
      *
      * @param string $anything String naming the option that stands for all of them.
      * @param string[] $keys Values to offer, in the order they are listed in.
@@ -216,7 +291,7 @@ class access_rules {
     private static function options(string $anything, array $keys, string $prefix): array {
         static $lists = [];
 
-        if (!isset($lists[$prefix])) {
+        if (!isset($lists[$prefix]) || PHPUNIT_TEST) {
             $lists[$prefix] = [self::ANY => get_string($anything, 'local_wproofreader')];
 
             foreach ($keys as $key) {
@@ -225,78 +300,5 @@ class access_rules {
         }
 
         return $lists[$prefix];
-    }
-
-    /**
-     * Whether one rule already grants everything another one grants.
-     *
-     * A rule reaches wider when it names everyone rather than one role, every
-     * feature rather than one, or everywhere rather than one site part. Two
-     * rules that cover each other are the same rule.
-     *
-     * @param array $wide The rule that may be the wider one.
-     * @param array $narrow The rule that may be covered.
-     * @return bool
-     */
-    public static function covers(array $wide, array $narrow): bool {
-        return ($wide['role'] === self::EVERYONE || $wide['role'] === $narrow['role'])
-            && ($wide['feature'] === self::ANY || $wide['feature'] === $narrow['feature'])
-            && ($wide['area'] === self::ANY || $wide['area'] === $narrow['area']);
-    }
-
-    /**
-     * How one rule stands against a list of rules.
-     *
-     * Nothing here forbids a rule. It only says which of the rules already
-     * listed say the same thing, say it more widely, or are made pointless by
-     * this one, by their number in the table.
-     *
-     * @param array $rule The rule to weigh up.
-     * @param array[] $rules The rules to weigh it against.
-     * @param int|null $self Position of the rule inside that list, when it is one of them.
-     * @return array Rule numbers under `repeats`, `covered` and `takesover`.
-     */
-    public static function relations(array $rule, array $rules, ?int $self = null): array {
-        $relations = ['repeats' => [], 'covered' => [], 'takesover' => []];
-
-        foreach ($rules as $index => $other) {
-            if ($index === $self) {
-                continue;
-            }
-
-            $wider = self::covers($other, $rule);
-            $narrower = self::covers($rule, $other);
-
-            if ($wider && $narrower) {
-                // The same rule twice. The one listed first is the original.
-                if ($self === null || $index < $self) {
-                    $relations['repeats'][] = $index + 1;
-                }
-            } else if ($wider) {
-                $relations['covered'][] = $index + 1;
-            } else if ($narrower) {
-                $relations['takesover'][] = $index + 1;
-            }
-        }
-
-        return $relations;
-    }
-
-    /**
-     * One rule written out as the sentence it stands for.
-     *
-     * @param array $rule A rule, as stored.
-     * @return string
-     */
-    public static function describe(array $rule): string {
-        $roles = self::role_options();
-        $features = self::feature_options();
-        $areas = self::area_options();
-
-        return get_string('rule_sentence', 'local_wproofreader', (object) [
-            'role' => $roles[$rule['role']] ?? get_string('rule_role_missing', 'local_wproofreader'),
-            'feature' => $features[$rule['feature']] ?? $rule['feature'],
-            'area' => $areas[$rule['area']] ?? $rule['area'],
-        ]);
     }
 }

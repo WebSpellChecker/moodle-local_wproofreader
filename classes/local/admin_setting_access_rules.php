@@ -51,7 +51,7 @@ class admin_setting_access_rules extends admin_setting {
     /**
      * Store the rules the form arrived with, after any removal and addition.
      *
-     * @param array $data Submitted rules, dropdown values, and any row to remove.
+     * @param array $data The submitted rules, and the dropdown values of any rule to add.
      * @return string Empty string on success, error message otherwise.
      */
     public function write_setting($data) {
@@ -60,7 +60,7 @@ class admin_setting_access_rules extends admin_setting {
         }
 
         if (isset($data['rules'])) {
-            $rules = $this->submitted_rules($data['rules']);
+            $rules = access_rules::decode((string) $data['rules']);
 
             if ($rules === null) {
                 return get_string('rule_unknown_value', 'local_wproofreader');
@@ -75,6 +75,13 @@ class admin_setting_access_rules extends admin_setting {
         $added = null;
 
         if ($role !== '' && $feature !== '' && $area !== '') {
+            if (access_rules::is_unreachable((int) $role, (string) $area)) {
+                return get_string('rule_unreachable', 'local_wproofreader', (object) [
+                    'role' => access_rules::role_options()[(int) $role] ?? $role,
+                    'area' => access_rules::area_options()[(string) $area] ?? $area,
+                ]);
+            }
+
             $added = access_rules::make($role, $feature, $area);
 
             if (!$added) {
@@ -82,30 +89,11 @@ class admin_setting_access_rules extends admin_setting {
             }
         }
 
-        // Without JavaScript a row is removed by submitting its number, which
-        // counts from the table as it was rendered, so removal comes first.
-        $remove = $data['remove'] ?? '';
-
-        if ($remove !== '' && array_key_exists((int) $remove, $rules)) {
-            unset($rules[(int) $remove]);
-            $rules = array_values($rules);
-        }
-
         if ($added) {
             $rules[] = $added;
         }
 
         return $this->config_write($this->name, json_encode($rules)) ? '' : get_string('errorsetting', 'admin');
-    }
-
-    /**
-     * The rules the hidden field carried.
-     *
-     * @param string $submitted JSON as the form posted it.
-     * @return array[]|null The rules, or null when the field cannot be trusted.
-     */
-    private function submitted_rules($submitted): ?array {
-        return access_rules::decode((string) $submitted);
     }
 
     /**
@@ -135,12 +123,12 @@ class admin_setting_access_rules extends admin_setting {
                 'total' => sprintf(self::PLACEHOLDER, 'TOTAL'),
             ]),
             'warnings' => [
-                'repeatsOne' => $this->template('rule_repeats_one', 'RULES'),
-                'repeatsMany' => $this->template('rule_repeats_many', 'RULES'),
-                'coveredOne' => $this->template('rule_covered_one', 'RULES'),
-                'coveredMany' => $this->template('rule_covered_many', 'RULES'),
-                'takesoverOne' => $this->template('rule_takesover_one', 'RULES'),
-                'takesoverMany' => $this->template('rule_takesover_many', 'RULES'),
+                'repeatsOne' => $this->template('rule_repeats_one'),
+                'repeatsMany' => $this->template('rule_repeats_many'),
+                'coveredOne' => $this->template('rule_covered_one'),
+                'coveredMany' => $this->template('rule_covered_many'),
+                'takesoverOne' => $this->template('rule_takesover_one'),
+                'takesoverMany' => $this->template('rule_takesover_many'),
             ],
         ]]);
 
@@ -151,7 +139,7 @@ class admin_setting_access_rules extends admin_setting {
             . $this->dropdown('feature', access_rules::feature_options())
             . $this->dropdown('area', access_rules::area_options())
             . html_writer::tag('button', get_string('rule_add', 'local_wproofreader'), [
-                'type' => 'submit',
+                'type' => 'button',
                 'class' => 'btn btn-primary',
                 'data-rule-add' => '1',
             ]),
@@ -207,18 +195,9 @@ class admin_setting_access_rules extends admin_setting {
             return [];
         }
 
-        if (isset($data['rules'])) {
-            return $this->submitted_rules($data['rules']) ?? access_rules::all();
-        }
-
-        // Anything else the form posted is not a list of rules.
-        foreach ($data as $rule) {
-            if (!is_array($rule)) {
-                return access_rules::all();
-            }
-        }
-
-        return $data;
+        return isset($data['rules'])
+            ? access_rules::decode((string) $data['rules']) ?? access_rules::all()
+            : access_rules::all();
     }
 
     /**
@@ -311,12 +290,9 @@ class admin_setting_access_rules extends admin_setting {
     }
 
     /**
-     * The rules added so far, numbered, each with a button that removes it.
+     * The shell of the rules table, which the module fills in.
      *
-     * The table is rendered even when there is nothing in it, because the
-     * browser fills it in as rules are added.
-     *
-     * @param array[] $rules Rules as stored.
+     * @param array[] $rules Rules as stored, to decide whether the table shows at all.
      * @return string
      */
     private function listing(array $rules): string {
@@ -327,14 +303,9 @@ class admin_setting_access_rules extends admin_setting {
             . html_writer::tag('th', get_string('rules_actions', 'local_wproofreader'), ['scope' => 'col'])
         );
 
-        $body = '';
-        foreach ($rules as $index => $rule) {
-            $body .= $this->row($index, access_rules::describe($rule), $this->row_warning($rule, $rules, $index));
-        }
-
         return html_writer::tag(
             'table',
-            html_writer::tag('thead', $head) . html_writer::tag('tbody', $body, ['data-rules-body' => '1']),
+            html_writer::tag('thead', $head) . html_writer::tag('tbody', '', ['data-rules-body' => '1']),
             [
                 'class' => 'table generaltable local-wproofreader-rules',
                 'hidden' => $rules ? null : 'hidden',
@@ -343,107 +314,13 @@ class admin_setting_access_rules extends admin_setting {
     }
 
     /**
-     * One row of the table.
-     *
-     * @param int $index Position of the rule in the list.
-     * @param string $sentence The rule, written out.
-     * @param string $warning What the rule repeats or is covered by, empty when it stands on its own.
-     * @return string
-     */
-    private function row(int $index, string $sentence, string $warning = ''): string {
-        $attributes = [
-            'type' => 'submit',
-            'class' => 'btn btn-sm btn-outline-danger',
-            'name' => $this->get_full_name() . '[remove]',
-            'value' => $index,
-            'data-rule-remove' => $index,
-            'aria-label' => get_string('rule_remove_label', 'local_wproofreader', (object) [
-                'number' => $index + 1,
-                'sentence' => html_entity_decode($sentence, ENT_QUOTES, 'UTF-8'),
-            ]),
-        ];
-
-        if ($this->is_readonly()) {
-            $attributes['disabled'] = 'disabled';
-        }
-
-        return html_writer::tag(
-            'tr',
-            html_writer::tag('td', $index + 1, ['class' => 'local-wproofreader-rule-number'])
-            . html_writer::tag('td', $sentence . $this->marker($warning))
-            . html_writer::tag(
-                'td',
-                html_writer::tag('button', get_string('rule_remove', 'local_wproofreader'), $attributes),
-                ['class' => 'local-wproofreader-rule-actions']
-            )
-        );
-    }
-
-    /**
-     * What makes one row of the table redundant, if anything does.
-     *
-     * @param array $rule The rule the row is for.
-     * @param array[] $rules Every rule in the table.
-     * @param int $index Position of the rule in that list.
-     * @return string The warning, or an empty string.
-     */
-    private function row_warning(array $rule, array $rules, int $index): string {
-        $relations = access_rules::relations($rule, $rules, $index);
-
-        foreach (['repeats', 'covered'] as $kind) {
-            $numbers = $relations[$kind];
-
-            if ($numbers) {
-                return get_string(
-                    'rule_' . $kind . '_' . (count($numbers) > 1 ? 'many' : 'one'),
-                    'local_wproofreader',
-                    implode(', ', $numbers)
-                );
-            }
-        }
-
-        return '';
-    }
-
-    /**
-     * The icon that shows a warning when it is hovered or focused.
-     *
-     * The warning is carried by the label rather than by the box it opens,
-     * because a hidden box is out of the accessibility tree until it is shown.
-     *
-     * @param string $warning What to say, empty for no marker at all.
-     * @return string
-     */
-    private function marker(string $warning): string {
-        if ($warning === '') {
-            return '';
-        }
-
-        return html_writer::tag(
-            'span',
-            html_writer::tag('span', 'i', ['aria-hidden' => 'true'])
-            . html_writer::tag('span', $warning, [
-                'class' => 'local-wproofreader-rule-infobox',
-                'aria-hidden' => 'true',
-            ]),
-            [
-                'class' => 'local-wproofreader-rule-info',
-                'tabindex' => '0',
-                'role' => 'note',
-                'aria-label' => $warning,
-            ]
-        );
-    }
-
-    /**
-     * A translated string with a marker where its one placeholder goes.
+     * A warning with a marker where its list of rule numbers goes.
      *
      * @param string $identifier String to fetch.
-     * @param string $marker Name of the marker to leave behind.
      * @return string
      */
-    private function template(string $identifier, string $marker): string {
-        return get_string($identifier, 'local_wproofreader', sprintf(self::PLACEHOLDER, $marker));
+    private function template(string $identifier): string {
+        return get_string($identifier, 'local_wproofreader', sprintf(self::PLACEHOLDER, 'RULES'));
     }
 
     /**

@@ -16,6 +16,10 @@
 
 namespace local_wproofreader;
 
+defined('MOODLE_INTERNAL') || die();
+
+require_once(__DIR__ . '/rule_fixtures_trait.php');
+
 use local_wproofreader\local\access_rules;
 use local_wproofreader\local\context_evaluator;
 
@@ -28,17 +32,7 @@ use local_wproofreader\local\context_evaluator;
  * @covers     \local_wproofreader\local\access_rules
  */
 final class access_rules_test extends \advanced_testcase {
-    /**
-     * Store a list of rules, written the short way.
-     *
-     * @param array $rules Each rule as role, feature and area.
-     * @return void
-     */
-    private function store(array $rules): void {
-        set_config('access_rules', json_encode(array_map(function (array $rule): array {
-            return ['role' => $rule[0], 'feature' => $rule[1], 'area' => $rule[2]];
-        }, $rules)), 'local_wproofreader');
-    }
+    use rule_fixtures_trait;
 
     /**
      * A rule grants its feature to the role it names, in the area it names.
@@ -158,55 +152,51 @@ final class access_rules_test extends \advanced_testcase {
     }
 
     /**
-     * A rule covers another when it is the same rule or a wider one.
+     * A rule pairing a role with an area it can never reach is refused on write.
      *
      * @return void
      */
-    public function test_covers(): void {
-        $everything = ['role' => access_rules::EVERYONE, 'feature' => access_rules::ANY, 'area' => access_rules::ANY];
-        $spelling = ['role' => access_rules::EVERYONE, 'feature' => 'spelling', 'area' => 'courses'];
-        $student = ['role' => 5, 'feature' => 'spelling', 'area' => 'courses'];
-        $teacher = ['role' => 3, 'feature' => 'spelling', 'area' => 'courses'];
+    public function test_make_refuses_an_unreachable_pairing(): void {
+        global $CFG, $DB;
 
-        $this->assertTrue(access_rules::covers($everything, $student));
-        $this->assertFalse(access_rules::covers($student, $everything));
-        $this->assertTrue(access_rules::covers($spelling, $student));
-        $this->assertFalse(access_rules::covers($student, $spelling));
-        $this->assertFalse(access_rules::covers($student, $teacher));
-        $this->assertTrue(access_rules::covers($student, $student));
+        $this->resetAfterTest();
+        $student = $DB->get_record('role', ['shortname' => 'student']);
+        $manager = $DB->get_record('role', ['shortname' => 'manager']);
+
+        // Student holds no moodle/site:configview, so it can never open the area.
+        $this->assertNull(access_rules::make($student->id, 'spelling', context_evaluator::AREA_ADMIN));
+        $this->assertTrue(access_rules::is_unreachable((int) $student->id, context_evaluator::AREA_ADMIN));
+
+        // Manager does, and Everyone is never narrowed.
+        $this->assertNotNull(access_rules::make($manager->id, 'spelling', context_evaluator::AREA_ADMIN));
+        $this->assertNotNull(access_rules::make(access_rules::EVERYONE, 'spelling', context_evaluator::AREA_ADMIN));
+
+        // Other areas stay open to Student, and so does the wildcard.
+        $this->assertNotNull(access_rules::make($student->id, 'spelling', context_evaluator::AREA_COURSES));
+        $this->assertNotNull(access_rules::make($student->id, 'spelling', access_rules::ANY));
+
+        // The front page role is shut out of everything outside the course areas,
+        // so for it the wildcard is not inert but the other areas are.
+        $frontpage = (int) $CFG->defaultfrontpageroleid;
+        $this->assertTrue(access_rules::is_unreachable($frontpage, context_evaluator::AREA_USERS));
+        $this->assertFalse(access_rules::is_unreachable($frontpage, context_evaluator::AREA_COURSES));
     }
 
     /**
-     * A rule is weighed against the list by number, and never against itself.
+     * An unreachable rule already stored is still readable, so saves keep working.
      *
      * @return void
      */
-    public function test_relations(): void {
-        $spelling = ['role' => access_rules::EVERYONE, 'feature' => 'spelling', 'area' => 'courses'];
-        $student = ['role' => 5, 'feature' => 'spelling', 'area' => 'courses'];
-        $everything = ['role' => access_rules::EVERYONE, 'feature' => access_rules::ANY, 'area' => access_rules::ANY];
-        $rules = [$spelling, $student, $spelling];
+    public function test_an_unreachable_rule_already_stored_is_kept(): void {
+        global $DB;
 
-        // A rule not in the list is weighed against all of it.
-        $relations = access_rules::relations($spelling, $rules);
-        $this->assertSame([1, 3], $relations['repeats']);
-        $this->assertSame([2], $relations['takesover']);
+        $this->resetAfterTest();
+        $student = $DB->get_record('role', ['shortname' => 'student']);
+        $this->store([[$student->id, 'spelling', context_evaluator::AREA_ADMIN]]);
 
-        // The second copy repeats the first; the first repeats nothing.
-        $this->assertSame([1], access_rules::relations($spelling, $rules, 2)['repeats']);
-        $this->assertSame([], access_rules::relations($spelling, $rules, 0)['repeats']);
-
-        // The narrower rule is covered by both copies of the wider one.
-        $this->assertSame([1, 3], access_rules::relations($student, $rules, 1)['covered']);
-
-        // A rule that covers the lot takes all of it over.
-        $this->assertSame([1, 2, 3], access_rules::relations($everything, $rules)['takesover']);
-
-        // A rule with nothing in common stands on its own.
-        $alone = ['role' => access_rules::EVERYONE, 'feature' => 'autocorrect', 'area' => 'admin'];
-        $this->assertSame(
-            ['repeats' => [], 'covered' => [], 'takesover' => []],
-            access_rules::relations($alone, $rules)
-        );
+        $this->assertCount(1, access_rules::all());
+        $this->assertNotNull(access_rules::decode(
+            json_encode([['role' => $student->id, 'feature' => 'spelling', 'area' => 'admin']])
+        ));
     }
 }
