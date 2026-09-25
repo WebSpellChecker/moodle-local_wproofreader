@@ -495,7 +495,7 @@ export const init = (strings) => {
         // The builder is not what is being written while a row is open.
         say(notice, '');
 
-        // visible() always keeps the row being edited, whatever the filter says.
+        // The visible() helper always keeps the row being edited, whatever the filter says.
         const row = body.querySelector('[data-rule-editrow]');
 
         applyReach(row.querySelector('[data-rule-field="role"]'), row.querySelector('[data-rule-field="area"]'));

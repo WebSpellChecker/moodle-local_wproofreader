@@ -75,17 +75,6 @@ class context_evaluator {
     /**
      * Areas a role cannot reach, which the rule builder does not offer.
      *
-     * Two reasons put an area here. The front page role is applied through
-     * config on the site home, and roleids_for() skips it outside the course
-     * areas, so no user ever carries it there. A role without the capability an
-     * area needs cannot open its pages on its own.
-     *
-     * The second reason holds for the role by itself, not for every user who
-     * holds it: someone who is a student in one place and a manager in another
-     * does reach site administration, and every role they hold counts there. A
-     * rule already stored for such a pairing keeps working; it just cannot be
-     * built here any more.
-     *
      * @return array Role id against the area keys it cannot reach.
      */
     public static function unreachable_areas(): array {
@@ -168,22 +157,6 @@ class context_evaluator {
 
     /**
      * Role ids the current user holds, as they apply to the given area.
-     *
-     * Both answers come from `get_user_accessdata()`, which the request already
-     * holds, rather than from `get_user_roles_with_special()`, whose query is
-     * uncached and would run on every course page. The accessdata carries the
-     * authenticated user and front page roles too, so nothing is lost. Inside a
-     * course the paths are filtered to the course and its ancestors; elsewhere
-     * every role the user holds anywhere counts, so that being a student
-     * somewhere still means something on a page where no course role is in
-     * scope.
-     *
-     * The guest role is added by hand, since neither helper reports it. Nobody
-     * logged in has no roles either: the accessdata answers with the role the
-     * site gives visitors, so anonymous pages are governed like any other.
-     *
-     * A user who has switched role holds that role and nothing else, which is
-     * what switching means, and which the role assignment tables do not show.
      *
      * @param string $area One of the AREA_* constants.
      * @param \context $context Page context.
