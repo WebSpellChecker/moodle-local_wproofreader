@@ -14,19 +14,25 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
+namespace local_wproofreader;
+
 /**
- * Plugin metadata for local_wproofreader.
+ * Writes a list of rules for a test, spelled the short way.
  *
  * @package    local_wproofreader
  * @copyright  2026 WebSpellChecker
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
-defined('MOODLE_INTERNAL') || die();
-
-$plugin->component = 'local_wproofreader';
-$plugin->version   = 2026092500;
-$plugin->release   = '2.2.0';
-$plugin->requires  = 2022112800;
-$plugin->supported = [41, 52];
-$plugin->maturity  = MATURITY_STABLE;
+trait rule_fixtures_trait {
+    /**
+     * Store a list of rules, each given as role, feature and area.
+     *
+     * @param array $rules Each rule as a three-element list.
+     * @return void
+     */
+    private function store(array $rules): void {
+        set_config('access_rules', json_encode(array_map(function (array $rule): array {
+            return ['role' => $rule[0], 'feature' => $rule[1], 'area' => $rule[2]];
+        }, $rules)), 'local_wproofreader');
+    }
+}

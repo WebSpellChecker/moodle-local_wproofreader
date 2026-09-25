@@ -2,6 +2,16 @@
 
 All notable changes to the WProofreader plugin for Moodle are documented here.
 
+## 2.2.0
+
+* Removed the "Proofreading features" and "Where to enable WProofreader" settings sections. What they controlled is migrated on upgrade into access rules, which replace them.
+* Added the "Feature access rules" section, where each rule grants one role one proofreading feature on one part of the site. Rules add up, and are matched per page against the roles the user holds there.
+* Listed the saved rules as a numbered table under the section, drawn in the browser, each row removable on the spot. Adding and removing rules edit the page in place, and reach the database when the settings page is saved.
+* Added filtering and sorting of the rules table by role, feature and site part, and inline editing of a rule in the row it occupies.
+* Narrowed the site part list to what the chosen role can open: a role without `moodle/site:configview` is not offered site administration, and the front page role is offered only the areas rendered inside a course.
+* Added a PHPUnit suite covering the rules engine, the page-to-features resolution and the migration.
+* Reported how a rule stands against the ones already listed while it is still being composed, naming them by number, and marked every saved row that adds nothing with an information icon. A repeating or overridden rule is reported, never refused.
+
 ## 2.0.0 (2026-08-20)
 
 * Widened official Moodle support to 4.1 through the 5.2 branch (previously 4.5 LTS through 5.2).

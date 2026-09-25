@@ -15,18 +15,31 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Plugin metadata for local_wproofreader.
+ * Install steps for local_wproofreader.
  *
  * @package    local_wproofreader
  * @copyright  2026 WebSpellChecker
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
+/**
+ * Seed the access rules on a fresh install.
+ *
+ * Rules only grant, so a site with none proofreads nothing. One rule that
+ * covers everyone, every feature and every area is what makes the plugin work
+ * as soon as it is installed. Sites that upgrade keep the reach they had, which
+ * db/upgrade.php migrates instead.
+ *
+ * @return bool
+ */
+function xmldb_local_wproofreader_install(): bool {
+    $everything = [
+        'role' => \local_wproofreader\local\access_rules::EVERYONE,
+        'feature' => \local_wproofreader\local\access_rules::ANY,
+        'area' => \local_wproofreader\local\access_rules::ANY,
+    ];
 
-$plugin->component = 'local_wproofreader';
-$plugin->version   = 2026092500;
-$plugin->release   = '2.2.0';
-$plugin->requires  = 2022112800;
-$plugin->supported = [41, 52];
-$plugin->maturity  = MATURITY_STABLE;
+    set_config(\local_wproofreader\local\access_rules::SETTING, json_encode([$everything]), 'local_wproofreader');
+
+    return true;
+}
