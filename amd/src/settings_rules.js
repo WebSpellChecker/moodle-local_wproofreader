@@ -33,17 +33,17 @@ const EVERYONE = 0;
 const ANY = '*';
 
 /**
- * Put a value into a marked template without letting it be read as a pattern.
+ * Put values into a marked template without letting them be read as patterns.
  *
  * A replacement string expands $&, $` and $1, and role names are whatever the
- * site called them, so the value goes in through a function instead.
+ * site called them, so each value goes in through a function instead.
  *
  * @param {string} template The wording, carrying markers.
- * @param {string} marker The marker to fill, such as @@ROLE@@.
- * @param {string} value What to put there.
+ * @param {object} values What to put where, keyed by marker such as @@ROLE@@.
  * @returns {string}
  */
-const fill = (template, marker, value) => template.replace(marker, () => value);
+const fill = (template, values) => Object.entries(values)
+    .reduce((wording, [marker, value]) => wording.replace(marker, () => value), template);
 
 /**
  * Read the rules the form arrived with.
@@ -129,16 +129,11 @@ export const init = (strings) => {
         filters[part] = root.querySelector(`[data-rule-filter="${part}"]`);
     });
 
-
     const missing = !store || !body || !table || !notice || !empty || !addButton
         || !controls || !count || !nomatch || !sortBy
         || PARTS.some((part) => !selects[part] || !filters[part]);
 
-    if (missing) {
-        return;
-    }
-
-    if (store.disabled) {
+    if (missing || store.disabled) {
         return;
     }
 
@@ -148,7 +143,6 @@ export const init = (strings) => {
     // What the open row currently spells out, which is not the stored rule until
     // it is saved. Anything that re-renders the table has to put it back.
     let pending = null;
-
 
     // The dropdowns never change after this, so their labels and their order are
     // read once rather than on every row of every render.
@@ -166,20 +160,28 @@ export const init = (strings) => {
     const labelOf = (part, value) => labels[part].get(String(value))
         ?? (part === 'role' ? strings.missingRole : String(value));
 
-    const sentenceOf = (rule) => {
-        let sentence = fill(strings.sentence, '@@ROLE@@', labelOf('role', rule.role));
-
-        sentence = fill(sentence, '@@FEATURE@@', labelOf('feature', rule.feature));
-
-        return fill(sentence, '@@AREA@@', labelOf('area', rule.area));
-    };
+    const sentenceOf = (rule) => fill(strings.sentence, {
+        '@@ROLE@@': labelOf('role', rule.role),
+        '@@FEATURE@@': labelOf('feature', rule.feature),
+        '@@AREA@@': labelOf('area', rule.area),
+    });
 
     const phrase = (kind, numbers) => {
         const key = kind + (numbers.length > 1 ? 'Many' : 'One');
 
-        return fill(strings.warnings[key], '@@RULES@@', numbers.join(', '));
+        return fill(strings.warnings[key], {'@@RULES@@': numbers.join(', ')});
     };
 
+    const button = (variant, key, index, label) => {
+        const element = document.createElement('button');
+
+        element.type = 'button';
+        element.className = `btn btn-sm ${variant}`;
+        element.dataset[key] = String(index);
+        element.textContent = label;
+
+        return element;
+    };
 
     const markerOf = (warning) => {
         const marker = document.createElement('span');
@@ -334,19 +336,10 @@ export const init = (strings) => {
         const actions = document.createElement('td');
         actions.className = 'local-wproofreader-rule-actions';
 
-        const save = document.createElement('button');
-        save.type = 'button';
-        save.className = 'btn btn-sm btn-primary';
-        save.dataset.ruleSave = String(index);
-        save.textContent = strings.saveLabel;
-
-        const cancel = document.createElement('button');
-        cancel.type = 'button';
-        cancel.className = 'btn btn-sm btn-outline-secondary';
-        cancel.dataset.ruleCancel = String(index);
-        cancel.textContent = strings.cancelLabel;
-
-        actions.append(save, cancel);
+        actions.append(
+            button('btn-primary', 'ruleSave', index, strings.saveLabel),
+            button('btn-outline-secondary', 'ruleCancel', index, strings.cancelLabel)
+        );
         row.append(number, text, actions);
 
         return row;
@@ -376,21 +369,15 @@ export const init = (strings) => {
         const actions = document.createElement('td');
         actions.className = 'local-wproofreader-rule-actions';
 
-        const remove = document.createElement('button');
-        remove.type = 'button';
-        remove.className = 'btn btn-sm btn-outline-danger';
-        remove.dataset.ruleRemove = String(index);
-        remove.textContent = strings.removeLabel;
-        remove.setAttribute('aria-label',
-            fill(fill(strings.removeDescription, '@@NUMBER@@', String(index + 1)), '@@SENTENCE@@', sentence));
+        const remove = button('btn-outline-danger', 'ruleRemove', index, strings.removeLabel);
 
-        const edit = document.createElement('button');
-        edit.type = 'button';
-        edit.className = 'btn btn-sm btn-outline-secondary';
-        edit.dataset.ruleEdit = String(index);
-        edit.textContent = strings.editLabel;
+        remove.setAttribute('aria-label',
+            fill(strings.removeDescription, {'@@NUMBER@@': String(index + 1), '@@SENTENCE@@': sentence}));
+
+        const edit = button('btn-outline-secondary', 'ruleEdit', index, strings.editLabel);
+
         edit.setAttribute('aria-label',
-            fill(fill(strings.editDescription, '@@NUMBER@@', String(index + 1)), '@@SENTENCE@@', sentence));
+            fill(strings.editDescription, {'@@NUMBER@@': String(index + 1), '@@SENTENCE@@': sentence}));
 
         actions.append(edit, remove);
         row.append(number, text, actions);
@@ -407,16 +394,10 @@ export const init = (strings) => {
      * @returns {Array} Entries of rule and stored position.
      */
     const visible = () => {
-        const wanted = {};
-
-        PARTS.forEach((part) => {
-            wanted[part] = filters[part].value;
-        });
-
         const shown = rules
             .map((rule, index) => ({rule, index}))
             .filter(({rule, index}) => index === editing
-                || PARTS.every((part) => wanted[part] === '' || String(rule[part]) === wanted[part]));
+                || PARTS.every((part) => filters[part].value === '' || String(rule[part]) === filters[part].value));
 
         const part = sortBy.value;
 
@@ -439,7 +420,7 @@ export const init = (strings) => {
         controls.hidden = rules.length === 0;
         count.textContent = shown.length === rules.length
             ? ''
-            : fill(fill(strings.showing, '@@SHOWN@@', String(shown.length)), '@@TOTAL@@', String(rules.length));
+            : fill(strings.showing, {'@@SHOWN@@': String(shown.length), '@@TOTAL@@': String(rules.length)});
 
         preview();
     };
@@ -552,7 +533,6 @@ export const init = (strings) => {
         selects[part].addEventListener('change', preview);
         filters[part].addEventListener('change', render);
     });
-
 
     sortBy.addEventListener('change', render);
 

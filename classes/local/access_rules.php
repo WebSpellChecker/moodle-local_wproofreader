@@ -103,12 +103,6 @@ class access_rules {
     /**
      * Read a submitted list of rules, refusing the lot if any of it is unknown.
      *
-     * This is the write path, where a payload that does not parse is not to be
-     * guessed at. Reading what is already stored is deliberately more forgiving:
-     * see all(). Roles are not checked here either way, because a rule naming a
-     * deleted role matches nobody and refusing it would make every later save
-     * fail.
-     *
      * @param string $json The list as it was stored.
      * @return array[]|null The rules, or null when the list itself is not readable.
      */
@@ -141,10 +135,6 @@ class access_rules {
     /**
      * Build one rule from what an administrator submitted.
      *
-     * The role is checked against the site roles here, which reading does not
-     * do: a rule naming a role that has since been deleted matches nobody, so
-     * it needs no guard, but one must never be written in the first place.
-     *
      * @param mixed $role Role id, or EVERYONE.
      * @param mixed $feature Feature key, or ANY.
      * @param mixed $area Area key, or ANY.
@@ -166,10 +156,6 @@ class access_rules {
 
     /**
      * Whether a role could never match in an area, so a rule pairing them is inert.
-     *
-     * Checked when a rule is written, not when one is read: a pairing that has
-     * become unreachable since, because a role lost a capability, keeps working
-     * as far as it can and stays in the table rather than blocking every save.
      *
      * @param int $role Role the rule names.
      * @param string $area Area the rule names.
@@ -279,9 +265,6 @@ class access_rules {
 
     /**
      * One list of things to offer, led by the option that means all of them.
-     *
-     * Held for the request, because the settings page asks for each list several
-     * times over: the builder and the filter row.
      *
      * @param string $anything String naming the option that stands for all of them.
      * @param string[] $keys Values to offer, in the order they are listed in.
