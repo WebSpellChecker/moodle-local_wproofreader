@@ -14,14 +14,13 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Settings-page helper: keeps the access rules in the form while they are being
- * edited, so that adding and removing rules does not submit the page, and says
- * which rules repeat or take over which. The rules travel in a hidden field and
- * reach the database when the page is saved.
+ * Settings-page helper: owns the rules table. It draws every row, keeps the
+ * rules in the form while they are edited so that nothing submits the page, and
+ * says which rules repeat or take over which. The rules travel in a hidden field
+ * and reach the database when the page is saved.
  *
- * The wording of every sentence comes from the server, and so does the way one
- * rule covers another, which is mirrored here so that the table answers before
- * the page is saved. Keep both in step with access_rules::covers().
+ * The wording of every sentence comes from the server. How one rule covers
+ * another lives here alone, since the server no longer draws the table.
  *
  * @module     local_wproofreader/settings_rules
  * @copyright  2026 WebSpellChecker
@@ -32,6 +31,19 @@ const SETTING_SELECTOR = '.local-wproofreader-rules-setting';
 const PARTS = ['role', 'feature', 'area'];
 const EVERYONE = 0;
 const ANY = '*';
+
+/**
+ * Put a value into a marked template without letting it be read as a pattern.
+ *
+ * A replacement string expands $&, $` and $1, and role names are whatever the
+ * site called them, so the value goes in through a function instead.
+ *
+ * @param {string} template The wording, carrying markers.
+ * @param {string} marker The marker to fill, such as @@ROLE@@.
+ * @param {string} value What to put there.
+ * @returns {string}
+ */
+const fill = (template, marker, value) => template.replace(marker, () => value);
 
 /**
  * Read the rules the form arrived with.
@@ -65,10 +77,10 @@ const covers = (wide, narrow) => (wide.role === EVERYONE || wide.role === narrow
  * @param {object} rule The rule to weigh up.
  * @param {Array} rules The rules to weigh it against.
  * @param {number|null} self Position of the rule in that list, when it is one of them.
- * @returns {object} Rule numbers under duplicates, covered and takesover.
+ * @returns {object} Rule numbers under repeats, covered and takesover.
  */
 const relations = (rule, rules, self = null) => {
-    const found = {duplicates: [], covered: [], takesover: []};
+    const found = {repeats: [], covered: [], takesover: []};
 
     rules.forEach((other, index) => {
         if (index === self) {
@@ -80,7 +92,7 @@ const relations = (rule, rules, self = null) => {
 
         if (wider && narrower) {
             if (self === null || index < self) {
-                found.duplicates.push(index + 1);
+                found.repeats.push(index + 1);
             }
         } else if (wider) {
             found.covered.push(index + 1);
@@ -117,6 +129,7 @@ export const init = (strings) => {
         filters[part] = root.querySelector(`[data-rule-filter="${part}"]`);
     });
 
+
     const missing = !store || !body || !table || !notice || !empty || !addButton
         || !controls || !count || !nomatch || !sortBy
         || PARTS.some((part) => !selects[part] || !filters[part]);
@@ -125,41 +138,48 @@ export const init = (strings) => {
         return;
     }
 
+    if (store.disabled) {
+        return;
+    }
+
     let rules = readRules(store);
     let editing = null;
 
-    const connective = root.querySelector('.local-wproofreader-rule-builder > span');
+    // What the open row currently spells out, which is not the stored rule until
+    // it is saved. Anything that re-renders the table has to put it back.
+    let pending = null;
 
-    const labelOf = (part, value) => {
-        const option = Array.from(selects[part].options).find((candidate) => candidate.value === String(value));
 
-        if (option) {
-            return option.textContent;
-        }
+    // The dropdowns never change after this, so their labels and their order are
+    // read once rather than on every row of every render.
+    const labels = {};
+    const collator = new Intl.Collator();
 
-        return part === 'role' ? strings.missingRole : String(value);
+    PARTS.forEach((part) => {
+        labels[part] = new Map();
+
+        Array.from(selects[part].options).forEach((option) => {
+            labels[part].set(option.value, option.textContent);
+        });
+    });
+
+    const labelOf = (part, value) => labels[part].get(String(value))
+        ?? (part === 'role' ? strings.missingRole : String(value));
+
+    const sentenceOf = (rule) => {
+        let sentence = fill(strings.sentence, '@@ROLE@@', labelOf('role', rule.role));
+
+        sentence = fill(sentence, '@@FEATURE@@', labelOf('feature', rule.feature));
+
+        return fill(sentence, '@@AREA@@', labelOf('area', rule.area));
     };
-
-    const sentenceOf = (rule) => strings.sentence
-        .replace('@@ROLE@@', labelOf('role', rule.role))
-        .replace('@@FEATURE@@', labelOf('feature', rule.feature))
-        .replace('@@AREA@@', labelOf('area', rule.area));
 
     const phrase = (kind, numbers) => {
         const key = kind + (numbers.length > 1 ? 'Many' : 'One');
 
-        return strings.warnings[key].replace('@@RULES@@', numbers.join(', '));
+        return fill(strings.warnings[key], '@@RULES@@', numbers.join(', '));
     };
 
-    const warningOf = (rule, index) => {
-        const found = relations(rule, rules, index);
-
-        if (found.duplicates.length) {
-            return phrase('repeats', found.duplicates);
-        }
-
-        return found.covered.length ? phrase('covered', found.covered) : '';
-    };
 
     const markerOf = (warning) => {
         const marker = document.createElement('span');
@@ -202,24 +222,69 @@ export const init = (strings) => {
         select.setAttribute('aria-label', root.querySelector(`label[for="${selects[part].id}"]`).textContent);
         select.value = String(value);
 
+        // A value the dropdown has no option for would otherwise be lost, and the
+        // row would read as something the rule does not say.
+        if (select.value !== String(value)) {
+            select.add(new Option(labelOf(part, value), String(value)), 0);
+            select.value = String(value);
+        }
+
+        // The rule already exists, so there is nothing left to prompt for.
+        const prompt = Array.from(select.options).find((option) => option.value === '');
+
+        if (prompt) {
+            prompt.remove();
+        }
+
         return select;
     };
 
-    /**
-     * The rule an edit row currently spells out.
-     *
-     * @param {HTMLElement} row The row being edited.
-     * @returns {object|null} The rule, or null while a dropdown sits on its prompt.
-     */
-    const chosenIn = (row) => {
-        if (!row) {
-            return null;
-        }
+    const connective = root.querySelector('.local-wproofreader-rule-builder > span');
 
+    // The site part dropdown as the server rendered it, before any role narrowed it.
+    const allAreas = Array.from(selects.area.options).map((option) => [option.value, option.textContent]);
+
+    /**
+     * Offer only the site parts the chosen role can open.
+     *
+     * A role blocked from any site part is not offered the wildcard either: it
+     * cannot be everywhere, so saying so would be a lie. An open edit row keeps
+     * whatever its rule already says, so the row reads true, and it needs no
+     * prompt because the rule exists already.
+     *
+     * @param {HTMLSelectElement} role The role dropdown.
+     * @param {HTMLSelectElement} area The site part dropdown beside it.
+     */
+    const applyReach = (role, area) => {
+        const builder = area === selects.area;
+        const wanted = area.value;
+        const blocked = strings.unreachable?.[String(role.value)] ?? [];
+        const hidden = blocked.length ? blocked.concat(ANY) : [];
+
+        area.replaceChildren(...allAreas
+            .filter(([value]) => value === ''
+                ? builder
+                : ((!builder && value === wanted) || !hidden.includes(value)))
+            .map(([value, label]) => new Option(label, value)));
+
+        area.value = wanted;
+
+        if (area.selectedIndex < 0) {
+            area.selectedIndex = 0;
+        }
+    };
+
+    /**
+     * The rule three dropdowns spell out, wherever those dropdowns live.
+     *
+     * @param {Function} fieldOf Gives the dropdown for one part of the rule.
+     * @returns {object|null} The rule, or null while the sentence is unfinished.
+     */
+    const ruleFrom = (fieldOf) => {
         const rule = {};
 
         for (const part of PARTS) {
-            const field = row.querySelector(`[data-rule-field="${part}"]`);
+            const field = fieldOf(part);
 
             if (!field || field.value === '') {
                 return null;
@@ -231,7 +296,17 @@ export const init = (strings) => {
         return rule;
     };
 
-    const editRowOf = (rule, index) => {
+    /**
+     * The rule an edit row currently spells out.
+     *
+     * @param {HTMLElement|null} row The row being edited.
+     * @returns {object|null} The rule, or null while a dropdown has no value.
+     */
+    const chosenIn = (row) => (row ? ruleFrom((part) => row.querySelector(`[data-rule-field="${part}"]`)) : null);
+
+    const editRowOf = (storedrule, index) => {
+        const rule = pending ?? storedrule;
+
         const row = document.createElement('tr');
         row.className = 'local-wproofreader-rule-editing';
         row.dataset.ruleEditrow = String(index);
@@ -292,7 +367,7 @@ export const init = (strings) => {
         const text = document.createElement('td');
         text.textContent = sentence;
 
-        const warning = warningOf(rule, index);
+        const warning = phraseFor(rule, index, ['repeats', 'covered']);
 
         if (warning) {
             text.appendChild(markerOf(warning));
@@ -306,34 +381,22 @@ export const init = (strings) => {
         remove.className = 'btn btn-sm btn-outline-danger';
         remove.dataset.ruleRemove = String(index);
         remove.textContent = strings.removeLabel;
-        remove.setAttribute('aria-label', strings.removeDescription
-            .replace('@@NUMBER@@', String(index + 1))
-            .replace('@@SENTENCE@@', sentence));
+        remove.setAttribute('aria-label',
+            fill(fill(strings.removeDescription, '@@NUMBER@@', String(index + 1)), '@@SENTENCE@@', sentence));
 
         const edit = document.createElement('button');
         edit.type = 'button';
         edit.className = 'btn btn-sm btn-outline-secondary';
         edit.dataset.ruleEdit = String(index);
         edit.textContent = strings.editLabel;
-        edit.setAttribute('aria-label', strings.editDescription
-            .replace('@@NUMBER@@', String(index + 1))
-            .replace('@@SENTENCE@@', sentence));
+        edit.setAttribute('aria-label',
+            fill(fill(strings.editDescription, '@@NUMBER@@', String(index + 1)), '@@SENTENCE@@', sentence));
 
         actions.append(edit, remove);
         row.append(number, text, actions);
 
         return row;
     };
-
-    /**
-     * Where a value sits in its dropdown, which is the order to sort it by.
-     *
-     * @param {string} part Which part of the rule the value belongs to.
-     * @param {string|number} value Value as stored.
-     * @returns {number}
-     */
-    const rank = (part, value) => Array.from(selects[part].options)
-        .findIndex((option) => option.value === String(value));
 
     /**
      * The rules to draw, in the order and selection the controls ask for.
@@ -344,14 +407,21 @@ export const init = (strings) => {
      * @returns {Array} Entries of rule and stored position.
      */
     const visible = () => {
+        const wanted = {};
+
+        PARTS.forEach((part) => {
+            wanted[part] = filters[part].value;
+        });
+
         const shown = rules
             .map((rule, index) => ({rule, index}))
-            .filter(({rule}) => PARTS.every((part) => filters[part].value === ''
-                || String(rule[part]) === filters[part].value));
+            .filter(({rule, index}) => index === editing
+                || PARTS.every((part) => wanted[part] === '' || String(rule[part]) === wanted[part]));
 
-        if (sortBy.value !== '') {
-            shown.sort((one, other) => rank(sortBy.value, one.rule[sortBy.value])
-                - rank(sortBy.value, other.rule[sortBy.value]));
+        const part = sortBy.value;
+
+        if (part) {
+            shown.sort((one, other) => collator.compare(labelOf(part, one.rule[part]), labelOf(part, other.rule[part])));
         }
 
         return shown;
@@ -367,13 +437,11 @@ export const init = (strings) => {
         empty.hidden = rules.length > 0;
         nomatch.hidden = rules.length === 0 || shown.length > 0;
         controls.hidden = rules.length === 0;
-        count.textContent = shown.length === rules.length ? '' : strings.showing
-            .replace('@@SHOWN@@', String(shown.length))
-            .replace('@@TOTAL@@', String(rules.length));
+        count.textContent = shown.length === rules.length
+            ? ''
+            : fill(fill(strings.showing, '@@SHOWN@@', String(shown.length)), '@@TOTAL@@', String(rules.length));
 
-        body.querySelectorAll('[data-rule-field]').forEach((field) => {
-            field.addEventListener('change', preview);
-        });
+        preview();
     };
 
     /**
@@ -381,19 +449,7 @@ export const init = (strings) => {
      *
      * @returns {object|null} The rule, or null while the sentence is unfinished.
      */
-    const chosen = () => {
-        const rule = {};
-
-        for (const part of PARTS) {
-            if (selects[part].value === '') {
-                return null;
-            }
-
-            rule[part] = part === 'role' ? Number(selects[part].value) : selects[part].value;
-        }
-
-        return rule;
-    };
+    const chosen = () => ruleFrom((part) => selects[part]);
 
     /**
      * How one rule stands against the rest, before it is committed.
@@ -401,26 +457,17 @@ export const init = (strings) => {
      * @param {object|null} rule The rule being composed, or null while unfinished.
      * @param {number|null} self Position of the rule being edited, so that it is
      *                           not weighed against the version already stored.
+     * @param {string[]} kinds Which relations are worth saying, in order of precedence.
      * @returns {string} What to say, empty when the rule stands on its own.
      */
-    const phraseFor = (rule, self) => {
-        const found = rule ? relations(rule, rules, self) : null;
-
-        if (!found) {
-            return '';
-        }
+    const phraseFor = (rule, self, kinds = ['repeats', 'covered', 'takesover']) => {
+        const found = rule ? relations(rule, rules, self) : {};
 
         // A rule that repeats or is already covered takes nothing over that was
         // not taken over already, so only the first of these is worth saying.
-        if (found.duplicates.length) {
-            return phrase('repeats', found.duplicates);
-        }
+        const kind = kinds.find((name) => found[name] && found[name].length);
 
-        if (found.covered.length) {
-            return phrase('covered', found.covered);
-        }
-
-        return found.takesover.length ? phrase('takesover', found.takesover) : '';
+        return kind ? phrase(kind, found[kind]) : '';
     };
 
     /**
@@ -440,6 +487,7 @@ export const init = (strings) => {
 
     const preview = () => {
         if (editing === null) {
+            applyReach(selects.role, selects.area);
             say(notice, phraseFor(chosen(), null));
             return;
         }
@@ -447,9 +495,18 @@ export const init = (strings) => {
         // The builder is not what is being written while a row is open.
         say(notice, '');
 
+        // visible() always keeps the row being edited, whatever the filter says.
         const row = body.querySelector('[data-rule-editrow]');
 
-        say(row ? row.querySelector('[data-rule-editnotice]') : null, phraseFor(chosenIn(row), editing));
+        applyReach(row.querySelector('[data-rule-field="role"]'), row.querySelector('[data-rule-field="area"]'));
+
+        const spelled = chosenIn(row);
+
+        if (spelled) {
+            pending = spelled;
+        }
+
+        say(row.querySelector('[data-rule-editnotice]'), phraseFor(spelled, editing));
     };
 
     /**
@@ -458,8 +515,7 @@ export const init = (strings) => {
      * @returns {boolean} Whether the edit was complete enough to keep.
      */
     const commit = () => {
-        const row = body.querySelector('[data-rule-editrow]');
-        const rule = row ? chosenIn(row) : null;
+        const rule = chosenIn(body.querySelector('[data-rule-editrow]'));
 
         if (!rule) {
             return false;
@@ -467,14 +523,16 @@ export const init = (strings) => {
 
         rules[editing] = rule;
         editing = null;
+        pending = null;
         render();
-        preview();
 
         return true;
     };
 
     // Enter inside an edit row would otherwise reach the page's own save button
     // and leave the edit behind.
+    body.addEventListener('change', preview);
+
     body.addEventListener('keydown', (event) => {
         if (event.key === 'Enter' && editing !== null) {
             event.preventDefault();
@@ -482,14 +540,19 @@ export const init = (strings) => {
         }
     });
 
-    // The buttons submit the page when this module does not run, so they give
-    // that up only now that it does.
-    addButton.type = 'button';
+    // Saving the settings page with a row still open takes the row with it,
+    // rather than quietly storing the list as it stood before the edit.
+    root.closest('form')?.addEventListener('submit', () => {
+        if (editing !== null) {
+            commit();
+        }
+    });
 
     PARTS.forEach((part) => {
         selects[part].addEventListener('change', preview);
         filters[part].addEventListener('change', render);
     });
+
 
     sortBy.addEventListener('change', render);
 
@@ -508,7 +571,6 @@ export const init = (strings) => {
             selects[part].value = '';
         });
         render();
-        preview();
     });
 
     root.addEventListener('click', (event) => {
@@ -517,8 +579,8 @@ export const init = (strings) => {
         if (edit) {
             event.preventDefault();
             editing = Number(edit.dataset.ruleEdit);
+            pending = null;
             render();
-            preview();
             body.querySelector('[data-rule-field="role"]').focus();
 
             return;
@@ -538,8 +600,8 @@ export const init = (strings) => {
         if (cancel) {
             event.preventDefault();
             editing = null;
+            pending = null;
             render();
-            preview();
 
             return;
         }
@@ -551,11 +613,20 @@ export const init = (strings) => {
         }
 
         event.preventDefault();
-        rules.splice(Number(remove.dataset.ruleRemove), 1);
+
+        const index = Number(remove.dataset.ruleRemove);
+
+        rules.splice(index, 1);
+
+        if (editing === index) {
+            editing = null;
+            pending = null;
+        } else if (editing !== null && editing > index) {
+            editing -= 1;
+        }
+
         render();
-        preview();
     });
 
     render();
-    preview();
 };

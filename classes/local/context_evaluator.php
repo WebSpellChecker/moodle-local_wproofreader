@@ -73,6 +73,45 @@ class context_evaluator {
     public const COURSE_AREAS = [self::AREA_COURSES, self::AREA_QUIZ];
 
     /**
+     * Areas a role cannot reach, which the rule builder does not offer.
+     *
+     * Two reasons put an area here. The front page role is applied through
+     * config on the site home, and roleids_for() skips it outside the course
+     * areas, so no user ever carries it there. A role without the capability an
+     * area needs cannot open its pages on its own.
+     *
+     * The second reason holds for the role by itself, not for every user who
+     * holds it: someone who is a student in one place and a manager in another
+     * does reach site administration, and every role they hold counts there. A
+     * rule already stored for such a pairing keeps working; it just cannot be
+     * built here any more.
+     *
+     * @return array Role id against the area keys it cannot reach.
+     */
+    public static function unreachable_areas(): array {
+        global $CFG;
+
+        $blocked = [];
+        $admins = get_roles_with_capability('moodle/site:configview', CAP_ALLOW, \context_system::instance());
+
+        foreach (array_keys(array_diff_key(get_all_roles(), $admins)) as $roleid) {
+            $blocked[(int) $roleid] = [self::AREA_ADMIN];
+        }
+
+        $frontpage = (int) ($CFG->defaultfrontpageroleid ?? 0);
+
+        if ($frontpage) {
+            // Every non-course area, which already covers site administration and
+            // so replaces any entry the capability loop made. This holds whatever
+            // the role can open: roleids_for() skips the front page role outside
+            // the course areas, so it can never match there.
+            $blocked[$frontpage] = array_values(array_diff(self::AREAS, self::COURSE_AREAS));
+        }
+
+        return $blocked;
+    }
+
+    /**
      * Features the current user is allowed on the given page.
      *
      * @param \moodle_page $page Current Moodle page.
@@ -130,13 +169,21 @@ class context_evaluator {
     /**
      * Role ids the current user holds, as they apply to the given area.
      *
-     * `get_user_roles_with_special()` is used inside courses because it adds
-     * the authenticated user and front page roles, which are applied through
-     * config rather than stored as role assignments. Outside courses the same
-     * roles come from the site-wide accessdata, so that being a student
-     * somewhere still counts on a page where no course role is in scope.
+     * Both answers come from `get_user_accessdata()`, which the request already
+     * holds, rather than from `get_user_roles_with_special()`, whose query is
+     * uncached and would run on every course page. The accessdata carries the
+     * authenticated user and front page roles too, so nothing is lost. Inside a
+     * course the paths are filtered to the course and its ancestors; elsewhere
+     * every role the user holds anywhere counts, so that being a student
+     * somewhere still means something on a page where no course role is in
+     * scope.
      *
-     * The guest role is added by hand, since neither helper reports it.
+     * The guest role is added by hand, since neither helper reports it. Nobody
+     * logged in has no roles either: the accessdata answers with the role the
+     * site gives visitors, so anonymous pages are governed like any other.
+     *
+     * A user who has switched role holds that role and nothing else, which is
+     * what switching means, and which the role assignment tables do not show.
      *
      * @param string $area One of the AREA_* constants.
      * @param \context $context Page context.
@@ -147,35 +194,33 @@ class context_evaluator {
 
         $userid = (int) $USER->id;
 
+        if ($switched = self::switched_role($context)) {
+            return [$switched];
+        }
+
         if (isguestuser() && !empty($CFG->guestroleid)) {
             return [(int) $CFG->guestroleid];
         }
 
         $roleids = [];
 
-        if (in_array($area, self::COURSE_AREAS, true)) {
-            foreach (get_user_roles_with_special($context, $userid) as $assignment) {
-                $roleids[] = (int) $assignment->roleid;
-            }
-
-            return array_values(array_unique($roleids));
-        }
-
-        if (!$userid) {
-            return [];
-        }
-
-        $accessdata = get_user_roles_sitewide_accessdata($userid);
+        $incourse = in_array($area, self::COURSE_AREAS, true);
 
         // The accessdata carries the front page role at the front page path, where
         // it is applied through config rather than assigned. It only means anything
-        // on the site home, which is a course area, so it is skipped here.
+        // on the site home, which is a course area, so it is skipped elsewhere.
         $frontpage = (int) ($CFG->defaultfrontpageroleid ?? 0);
         $frontpagepath = $frontpage ? \context_course::instance(SITEID)->path : '';
 
-        foreach ($accessdata['ra'] as $path => $assigned) {
+        foreach (get_user_accessdata($userid)['ra'] as $path => $assigned) {
+            // Inside a course only the roles held there and above it count. The
+            // path comparison is anchored so that /1/2 does not match /1/23.
+            if ($incourse && strpos($context->path . '/', $path . '/') !== 0) {
+                continue;
+            }
+
             foreach ($assigned as $roleid) {
-                if ((int) $roleid === $frontpage && $path === $frontpagepath) {
+                if (!$incourse && (int) $roleid === $frontpage && $path === $frontpagepath) {
                     continue;
                 }
 
@@ -184,6 +229,36 @@ class context_evaluator {
         }
 
         return array_values(array_unique($roleids));
+    }
+
+    /**
+     * The role the current user has switched to over this page, if any.
+     *
+     * Switching is recorded against the context it was made in, so a switch made
+     * in a course applies to everything inside it.
+     *
+     * @param \context $context Page context.
+     * @return int Role id, or zero when no switch applies here.
+     */
+    private static function switched_role(\context $context): int {
+        global $USER;
+
+        $switches = $USER->access['rsw'] ?? [];
+
+        if (!$switches) {
+            return 0;
+        }
+
+        // Nearest first, so a switch made in the activity wins over one made in
+        // the course around it. The paths come from core rather than from a
+        // prefix test, which would match /1/23 against a switch at /1/2.
+        foreach (array_reverse($context->get_parent_context_paths(true)) as $path) {
+            if (isset($switches[$path])) {
+                return (int) $switches[$path];
+            }
+        }
+
+        return 0;
     }
 
     /**

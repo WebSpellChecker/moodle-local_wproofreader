@@ -28,6 +28,20 @@
     color: #f0ad4e;
 }
 
+/* The words between the dropdowns of a sentence. */
+.local-wproofreader-rule-builder > span,
+.local-wproofreader-rule-edit > span {
+    color: #6c757d;
+}
+
+/* Every dropdown in this section sizes to its content and never overflows. */
+.local-wproofreader-rule-builder select,
+.local-wproofreader-rules-controls select,
+.local-wproofreader-rule-edit select {
+    width: auto;
+    max-width: 100%;
+}
+
 /*
  * The rule builder reads as one sentence, so its dropdowns and the words
  * between them sit on one line and wrap together on a narrow screen. The panel
@@ -42,15 +56,6 @@
     border: 1px solid #dee2e6;
     border-radius: 0.5rem;
     background-color: #f8f9fa;
-}
-
-.local-wproofreader-rule-builder select {
-    width: auto;
-    max-width: 100%;
-}
-
-.local-wproofreader-rule-builder > span {
-    color: #6c757d;
 }
 
 /* Keeps the button at the end of the row, whether or not the sentence wraps. */
@@ -75,11 +80,6 @@
     margin-top: 1.5rem;
     padding-top: 1rem;
     border-top: 1px solid #dee2e6;
-}
-
-.local-wproofreader-rules-controls select {
-    width: auto;
-    max-width: 100%;
 }
 
 /* A label and the dropdowns it names wrap as one, never apart. */
@@ -201,7 +201,6 @@
 }
 
 .local-wproofreader-rule-info:hover .local-wproofreader-rule-infobox,
-.local-wproofreader-rule-info:focus .local-wproofreader-rule-infobox,
 .local-wproofreader-rule-info:focus-within .local-wproofreader-rule-infobox {
     visibility: visible;
     opacity: 1;
@@ -213,15 +212,6 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 0.5rem;
-}
-
-.local-wproofreader-rule-edit select {
-    width: auto;
-    max-width: 100%;
-}
-
-.local-wproofreader-rule-edit > span {
-    color: #6c757d;
 }
 
 .local-wproofreader-rules tbody tr.local-wproofreader-rule-editing,

@@ -44,12 +44,14 @@ class config_builder {
         $isfree = self::is_free_edition($serviceid);
         $badgeenabled = self::is_badge_enabled();
 
-        $spelling     = in_array('spelling', $features, true);
-        $grammar      = in_array('grammar', $features, true);
-        $style        = in_array('style', $features, true);
-        $autocorrect  = in_array('autocorrect', $features, true);
-        $autocomplete = in_array('autocomplete', $features, true);
-        $aiassistant  = in_array('ai_writing_assistant', $features, true) && !$isfree;
+        $granted = array_flip($features);
+
+        $spelling     = isset($granted[access_rules::FEATURE_SPELLING]);
+        $grammar      = isset($granted[access_rules::FEATURE_GRAMMAR]);
+        $style        = isset($granted[access_rules::FEATURE_STYLE]);
+        $autocorrect  = isset($granted[access_rules::FEATURE_AUTOCORRECT]);
+        $autocomplete = isset($granted[access_rules::FEATURE_AUTOCOMPLETE]);
+        $aiassistant  = isset($granted[access_rules::FEATURE_AI]) && !$isfree;
 
         $ignoreallcaps    = self::feature_enabled('ignore_all_caps', true);
         $ignoredomains    = self::feature_enabled('ignore_domain_names', true);

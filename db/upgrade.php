@@ -35,7 +35,7 @@ function xmldb_local_wproofreader_upgrade(int $oldversion): bool {
         // to every role, so the site keeps the reach it had. Names and values are
         // written out here rather than read from the plugin classes, because an
         // upgrade step must keep working after those classes change.
-        $features = [
+        $featuretoggles = [
             'spelling' => ['enable_spelling', 1],
             'grammar' => ['enable_grammar', 1],
             'style' => ['enable_style', 1],
@@ -43,7 +43,7 @@ function xmldb_local_wproofreader_upgrade(int $oldversion): bool {
             'autocomplete' => ['enable_autocomplete', 0],
             'ai_writing_assistant' => ['enable_ai_writing_assistant', 1],
         ];
-        $areas = [
+        $areatoggles = [
             'courses' => ['enable_in_courses', 1],
             'quiz' => ['enable_on_quiz', 0],
             'categories' => ['enable_in_categories', 1],
@@ -68,16 +68,25 @@ function xmldb_local_wproofreader_upgrade(int $oldversion): bool {
             return count($on) === count($toggles) ? ['*'] : $on;
         };
 
-        $rules = [];
-        foreach ($enabled($features) as $feature) {
-            foreach ($enabled($areas) as $area) {
-                $rules[] = ['role' => 0, 'feature' => $feature, 'area' => $area];
+        // The toggles are deleted below, so a step that ran far enough to write the
+        // rules but died before its savepoint must not rebuild them from what is
+        // left: on a second pass every toggle reads as unset and the defaults would
+        // replace whatever the site had configured.
+        if (get_config('local_wproofreader', 'access_rules') === false) {
+            $rules = [];
+            $features = $enabled($featuretoggles);
+            $areas = $enabled($areatoggles);
+
+            foreach ($features as $feature) {
+                foreach ($areas as $area) {
+                    $rules[] = ['role' => 0, 'feature' => $feature, 'area' => $area];
+                }
             }
+
+            set_config('access_rules', json_encode($rules), 'local_wproofreader');
         }
 
-        set_config('access_rules', json_encode($rules), 'local_wproofreader');
-
-        foreach (array_merge($features, $areas) as [$name]) {
+        foreach (array_merge($featuretoggles, $areatoggles) as [$name]) {
             unset_config($name, 'local_wproofreader');
         }
 
