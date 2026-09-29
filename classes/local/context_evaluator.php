@@ -82,9 +82,8 @@ class context_evaluator {
 
         $blocked = [];
         $roles = get_all_roles();
-        $admins = get_roles_with_capability('moodle/site:configview', CAP_ALLOW, \context_system::instance());
 
-        foreach (array_keys(array_diff_key($roles, $admins)) as $roleid) {
+        foreach (array_keys(array_diff_key($roles, self::roles_reaching_admin())) as $roleid) {
             $blocked[(int) $roleid] = [self::AREA_ADMIN];
         }
 
@@ -101,6 +100,86 @@ class context_evaluator {
         }
 
         return $blocked;
+    }
+
+    /**
+     * Capabilities that open a page in the site administration tree.
+     *
+     * No single capability stands for the area. The tree is assembled from
+     * every installed plugin's settings, and each page names the capabilities
+     * that open it, so the list is read from the tree itself and follows
+     * whatever the site has installed.
+     *
+     * The tree is built for whoever is looking, because settings files add
+     * their pages behind their own capability checks. That is answered by the
+     * one caller: the plugin's settings page, which only an administrator can
+     * open, so the tree is complete by the time this runs.
+     *
+     * @return string[] Capability names, empty when the tree cannot be read.
+     */
+    private static function admin_capabilities(): array {
+        global $CFG;
+
+        static $capabilities = null;
+
+        if ($capabilities !== null) {
+            return $capabilities;
+        }
+
+        require_once($CFG->libdir . '/adminlib.php');
+
+        $found = [];
+        $pending = [admin_get_root(false, true)];
+
+        while ($node = array_pop($pending)) {
+            // A category answers every other property with an exception, so the
+            // declared property is what decides, not isset() or a null check.
+            if (property_exists($node, 'req_capability')) {
+                foreach ((array) $node->req_capability as $capability) {
+                    $found[$capability] = true;
+                }
+            }
+
+            if (method_exists($node, 'get_children')) {
+                foreach ($node->get_children() as $child) {
+                    $pending[] = $child;
+                }
+            }
+        }
+
+        $capabilities = array_keys($found);
+
+        return $capabilities;
+    }
+
+    /**
+     * Roles that hold at least one capability opening a site administration page.
+     *
+     * @return array Role ids as keys, so the caller can diff against all roles.
+     */
+    private static function roles_reaching_admin(): array {
+        global $DB;
+
+        $capabilities = self::admin_capabilities();
+
+        if (!$capabilities) {
+            // Nothing to judge by, so nothing is narrowed. Refusing every role
+            // would be a guess, and the rules only ever add access.
+            return array_flip(array_keys(get_all_roles()));
+        }
+
+        [$insql, $params] = $DB->get_in_or_equal($capabilities, SQL_PARAMS_NAMED, 'cap');
+        $params['permission'] = CAP_ALLOW;
+        $params['contextid'] = \context_system::instance()->id;
+
+        $roleids = $DB->get_fieldset_select(
+            'role_capabilities',
+            'DISTINCT roleid',
+            "capability {$insql} AND permission = :permission AND contextid = :contextid",
+            $params
+        );
+
+        return array_flip(array_map('intval', $roleids));
     }
 
     /**

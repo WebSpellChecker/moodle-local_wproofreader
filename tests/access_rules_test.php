@@ -132,6 +132,32 @@ final class access_rules_test extends \advanced_testcase {
     }
 
     /**
+     * Any capability that opens an admin page counts, not one chosen capability.
+     *
+     * @return void
+     */
+    public function test_any_admin_tree_capability_reaches_site_administration(): void {
+        $this->resetAfterTest();
+
+        // The tree is assembled from what the viewer may configure, and the
+        // settings page this feeds is only ever open to an administrator.
+        $this->setAdminUser();
+
+        $system = \context_system::instance();
+        $opener = (int) $this->getDataGenerator()->create_role();
+        $outsider = (int) $this->getDataGenerator()->create_role();
+
+        // Guards the user list at admin/user.php, and is not site:configview.
+        assign_capability('moodle/user:update', CAP_ALLOW, $opener, $system->id, true);
+        accesslib_clear_all_caches_for_unit_testing();
+
+        $blocked = context_evaluator::unreachable_areas();
+
+        $this->assertNotContains(context_evaluator::AREA_ADMIN, $blocked[$opener] ?? []);
+        $this->assertContains(context_evaluator::AREA_ADMIN, $blocked[$outsider] ?? []);
+    }
+
+    /**
      * An ordinary role named as the front page role still reaches every area.
      *
      * @return void
