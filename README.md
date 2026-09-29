@@ -74,7 +74,8 @@ All settings live under *Site administration > Plugins > Local plugins > WProofr
 ### Feature access rules
 
 Each rule reads as a sentence: *Student is allowed to check grammar in quiz
-attempts*. Complete all three dropdowns and save the page to add one.
+attempts*. Complete all three dropdowns and press *Add rule*; the rules reach the
+database when you save the page.
 
 Rules only grant. A user gets a feature wherever at least one rule allows it,
 and a site with no rules runs no proofreading at all. A fresh install starts
@@ -85,7 +86,7 @@ upgrading from 2.0.0 keeps the reach its old toggles gave it.
 |-----------|--------|
 | Role      | *Everyone*, plus every role defined on the site. |
 | Feature   | *do everything*, check spelling, check grammar, apply style suggestions, autocorrect text, autocomplete text, use the AI writing assistant. |
-| Site part | *everywhere*, in courses and activities, in quiz attempts, in course categories, on user pages, on system pages, in site administration. The list is narrowed to what the chosen role can open, and a role that cannot reach every site part is not offered *everywhere* either. |
+| Site part | *everywhere*, in courses and activities, in quiz attempts, in course categories, on user pages, on system pages, in site administration. The list is narrowed to what the chosen role can open. A role that cannot reach every site part is still offered the wildcard, which reads *where available* for it and means the parts that role can open. |
 
 The rules added so far are listed underneath the dropdowns, numbered in the
 order they were added, each with a button that removes it. Adding and removing

@@ -133,48 +133,6 @@ class access_rules {
     }
 
     /**
-     * Build one rule from what an administrator submitted.
-     *
-     * @param mixed $role Role id, or EVERYONE.
-     * @param mixed $feature Feature key, or ANY.
-     * @param mixed $area Area key, or ANY.
-     * @return array|null The rule, or null when any part of it is unknown.
-     */
-    public static function make($role, $feature, $area): ?array {
-        if ((int) $role !== self::EVERYONE && !array_key_exists((int) $role, self::role_options())) {
-            return null;
-        }
-
-        $rule = self::normalize($role, $feature, $area);
-
-        if ($rule && self::is_unreachable($rule['role'], $rule['area'])) {
-            return null;
-        }
-
-        return $rule;
-    }
-
-    /**
-     * Whether a role could never match in an area, so a rule pairing them is inert.
-     *
-     * @param int $role Role the rule names.
-     * @param string $area Area the rule names.
-     * @return bool
-     */
-    public static function is_unreachable(int $role, string $area): bool {
-        if ($role === self::EVERYONE) {
-            return false;
-        }
-
-        $blocked = context_evaluator::unreachable_areas()[$role] ?? [];
-
-        // A rule naming everywhere is inert only if the role is shut out of all of it.
-        return $area === self::ANY
-            ? count($blocked) === count(context_evaluator::AREAS)
-            : in_array($area, $blocked, true);
-    }
-
-    /**
      * One rule with its parts in the types they are stored as.
      *
      * @param mixed $role Role id, or EVERYONE.

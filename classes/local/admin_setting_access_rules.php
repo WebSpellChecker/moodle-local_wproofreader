@@ -23,13 +23,11 @@ use html_writer;
  * Builds access rules out of three dropdowns, and lists the rules built so far.
  *
  * The three dropdowns read as the sentence the rule stands for. They hold no
- * value of their own: picking all three and adding puts that rule in the table,
- * and the table travels with the form in a hidden field. Nothing reaches the
- * database until the settings page is saved.
+ * value of their own and are never posted: Add rule puts that rule in the
+ * table, the table travels with the form in a hidden field, and nothing
+ * reaches the database until the settings page is saved.
  *
- * Adding and removing are done in the browser. Without JavaScript the buttons
- * submit the page instead, which arrives here as a row to remove or a rule to
- * append, so the control still works, one page load at a time.
+ * The table is drawn in the browser, so the section needs JavaScript.
  *
  * @package    local_wproofreader
  * @copyright  2026 WebSpellChecker
@@ -49,48 +47,24 @@ class admin_setting_access_rules extends admin_setting {
     }
 
     /**
-     * Store the rules the form arrived with, after any removal and addition.
+     * Store the rules the form arrived with.
      *
-     * @param array $data The submitted rules, and the dropdown values of any rule to add.
+     * @param mixed $data The rules list as the hidden field carries it.
      * @return string Empty string on success, error message otherwise.
      */
     public function write_setting($data) {
-        if (!is_array($data) || $this->is_readonly()) {
+        if ($this->is_readonly()) {
             return '';
         }
 
-        if (isset($data['rules'])) {
-            $rules = access_rules::decode((string) $data['rules']);
-
-            if ($rules === null) {
-                return get_string('rule_unknown_value', 'local_wproofreader');
-            }
-        } else {
-            $rules = access_rules::all();
+        if (!is_string($data)) {
+            return get_string('rule_unreadable', 'local_wproofreader');
         }
 
-        $role = $data['role'] ?? '';
-        $feature = $data['feature'] ?? '';
-        $area = $data['area'] ?? '';
-        $added = null;
+        $rules = access_rules::decode($data);
 
-        if ($role !== '' && $feature !== '' && $area !== '') {
-            if (access_rules::is_unreachable((int) $role, (string) $area)) {
-                return get_string('rule_unreachable', 'local_wproofreader', (object) [
-                    'role' => access_rules::role_options()[(int) $role] ?? $role,
-                    'area' => access_rules::area_options()[(string) $area] ?? $area,
-                ]);
-            }
-
-            $added = access_rules::make($role, $feature, $area);
-
-            if (!$added) {
-                return get_string('rule_unknown_value', 'local_wproofreader');
-            }
-        }
-
-        if ($added) {
-            $rules[] = $added;
+        if ($rules === null) {
+            return get_string('rule_unreadable', 'local_wproofreader');
         }
 
         return $this->config_write($this->name, json_encode($rules)) ? '' : get_string('errorsetting', 'admin');
@@ -113,6 +87,7 @@ class admin_setting_access_rules extends admin_setting {
             'removeLabel' => get_string('rule_remove', 'local_wproofreader'),
             'removeDescription' => $this->label_template('rule_remove_label'),
             'missingRole' => get_string('rule_role_missing', 'local_wproofreader'),
+            'whereAvailable' => get_string('rule_where_available', 'local_wproofreader'),
             'unreachable' => context_evaluator::unreachable_areas(),
             'editLabel' => get_string('rule_edit', 'local_wproofreader'),
             'editDescription' => $this->label_template('rule_edit_label'),
@@ -142,8 +117,9 @@ class admin_setting_access_rules extends admin_setting {
                 'type' => 'button',
                 'class' => 'btn btn-primary',
                 'data-rule-add' => '1',
+                'disabled' => $this->is_readonly() ? 'disabled' : null,
             ]),
-            ['class' => 'local-wproofreader-rule-builder']
+            ['class' => 'local-wproofreader-rule-builder ignoredirty']
         );
 
         $notice = html_writer::tag('div', '', [
@@ -155,7 +131,7 @@ class admin_setting_access_rules extends admin_setting {
 
         $store = html_writer::empty_tag('input', [
             'type' => 'hidden',
-            'name' => $this->get_full_name() . '[rules]',
+            'name' => $this->get_full_name(),
             'value' => json_encode($rules),
             'data-rules-store' => '1',
             'disabled' => $this->is_readonly() ? 'disabled' : null,
@@ -183,20 +159,16 @@ class admin_setting_access_rules extends admin_setting {
      * The rules to draw the table from.
      *
      * Moodle hands output_html() the submitted data rather than the stored
-     * rules when write_setting() reported an error, so that nothing the
-     * administrator typed is lost. That arrives in the shape the form posts,
-     * which has to be read back before it can be listed.
+     * rules when write_setting() reported an error. A list that can be read
+     * is shown back, so nothing the administrator did is lost; one that
+     * cannot be read leaves the stored rules as the only thing to show.
      *
      * @param mixed $data Stored rules, or the data the form submitted.
      * @return array[]
      */
     private function rules_to_show($data): array {
-        if (!is_array($data)) {
-            return [];
-        }
-
-        return isset($data['rules'])
-            ? access_rules::decode((string) $data['rules']) ?? access_rules::all()
+        return is_string($data)
+            ? access_rules::decode($data) ?? access_rules::all()
             : access_rules::all();
     }
 
@@ -256,7 +228,7 @@ class admin_setting_access_rules extends admin_setting {
         ]);
 
         return html_writer::tag('div', $filters . $sort . $count, [
-            'class' => 'local-wproofreader-rules-controls',
+            'class' => 'local-wproofreader-rules-controls ignoredirty',
             'data-rules-controls' => '1',
             'hidden' => 'hidden',
         ]);
@@ -296,18 +268,20 @@ class admin_setting_access_rules extends admin_setting {
      * @return string
      */
     private function listing(array $rules): string {
-        $head = html_writer::tag(
-            'tr',
-            html_writer::tag('th', get_string('rules_number', 'local_wproofreader'), ['scope' => 'col'])
-            . html_writer::tag('th', get_string('rules_rule', 'local_wproofreader'), ['scope' => 'col'])
-            . html_writer::tag('th', get_string('rules_actions', 'local_wproofreader'), ['scope' => 'col'])
-        );
+        $columns = html_writer::tag('th', get_string('rules_number', 'local_wproofreader'), ['scope' => 'col'])
+            . html_writer::tag('th', get_string('rules_rule', 'local_wproofreader'), ['scope' => 'col']);
+
+        if (!$this->is_readonly()) {
+            $columns .= html_writer::tag('th', get_string('rules_actions', 'local_wproofreader'), ['scope' => 'col']);
+        }
+
+        $head = html_writer::tag('tr', $columns);
 
         return html_writer::tag(
             'table',
             html_writer::tag('thead', $head) . html_writer::tag('tbody', '', ['data-rules-body' => '1']),
             [
-                'class' => 'table generaltable local-wproofreader-rules',
+                'class' => 'table generaltable local-wproofreader-rules ignoredirty',
                 'hidden' => $rules ? null : 'hidden',
             ]
         );
@@ -380,9 +354,11 @@ class admin_setting_access_rules extends admin_setting {
     private function dropdown(string $part, array $options): string {
         $id = $this->get_id() . '_' . $part;
 
+        // An empty name is never posted, so the builder cannot add a rule by
+        // itself. Only Add rule does, and only the hidden store is read back.
         $select = html_writer::select(
             $options,
-            $this->get_full_name() . '[' . $part . ']',
+            '',
             '',
             ['' => get_string('rule_choose_' . $part, 'local_wproofreader')],
             [

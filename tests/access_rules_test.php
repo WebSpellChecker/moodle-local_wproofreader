@@ -132,57 +132,6 @@ final class access_rules_test extends \advanced_testcase {
     }
 
     /**
-     * Writing a rule checks the role exists; reading one does not.
-     *
-     * @return void
-     */
-    public function test_make_checks_the_role_exists(): void {
-        $this->resetAfterTest();
-        $role = $this->getDataGenerator()->create_role();
-
-        $this->assertNull(access_rules::make(4242, 'spelling', context_evaluator::AREA_COURSES));
-        $this->assertSame(
-            ['role' => $role, 'feature' => 'spelling', 'area' => context_evaluator::AREA_COURSES],
-            access_rules::make($role, 'spelling', context_evaluator::AREA_COURSES)
-        );
-        $this->assertSame(
-            ['role' => access_rules::EVERYONE, 'feature' => access_rules::ANY, 'area' => access_rules::ANY],
-            access_rules::make(access_rules::EVERYONE, access_rules::ANY, access_rules::ANY)
-        );
-    }
-
-    /**
-     * A rule pairing a role with an area it can never reach is refused on write.
-     *
-     * @return void
-     */
-    public function test_make_refuses_an_unreachable_pairing(): void {
-        global $CFG, $DB;
-
-        $this->resetAfterTest();
-        $student = $DB->get_record('role', ['shortname' => 'student']);
-        $manager = $DB->get_record('role', ['shortname' => 'manager']);
-
-        // Student holds no moodle/site:configview, so it can never open the area.
-        $this->assertNull(access_rules::make($student->id, 'spelling', context_evaluator::AREA_ADMIN));
-        $this->assertTrue(access_rules::is_unreachable((int) $student->id, context_evaluator::AREA_ADMIN));
-
-        // Manager does, and Everyone is never narrowed.
-        $this->assertNotNull(access_rules::make($manager->id, 'spelling', context_evaluator::AREA_ADMIN));
-        $this->assertNotNull(access_rules::make(access_rules::EVERYONE, 'spelling', context_evaluator::AREA_ADMIN));
-
-        // Other areas stay open to Student, and so does the wildcard.
-        $this->assertNotNull(access_rules::make($student->id, 'spelling', context_evaluator::AREA_COURSES));
-        $this->assertNotNull(access_rules::make($student->id, 'spelling', access_rules::ANY));
-
-        // The front page role is shut out of everything outside the course areas,
-        // so for it the wildcard is not inert but the other areas are.
-        $frontpage = (int) $CFG->defaultfrontpageroleid;
-        $this->assertTrue(access_rules::is_unreachable($frontpage, context_evaluator::AREA_USERS));
-        $this->assertFalse(access_rules::is_unreachable($frontpage, context_evaluator::AREA_COURSES));
-    }
-
-    /**
      * An ordinary role named as the front page role still reaches every area.
      *
      * @return void
@@ -197,14 +146,16 @@ final class access_rules_test extends \advanced_testcase {
 
         // Core applies this role at the site home through config, but the site
         // still holds it wherever it is assigned, so its rules do take effect.
-        $this->assertFalse(access_rules::is_unreachable($student, context_evaluator::AREA_USERS));
-        $this->assertNotNull(access_rules::make($student, 'spelling', context_evaluator::AREA_USERS));
+        $blocked = context_evaluator::unreachable_areas();
+        $this->assertNotContains(context_evaluator::AREA_USERS, $blocked[$student] ?? []);
 
         // The dedicated role is the one that never leaves the site home.
         $frontpage = (int) $DB->get_field('role', 'id', ['shortname' => 'frontpage']);
         set_config('defaultfrontpageroleid', $frontpage);
 
-        $this->assertTrue(access_rules::is_unreachable($frontpage, context_evaluator::AREA_USERS));
+        $blocked = context_evaluator::unreachable_areas();
+        $this->assertContains(context_evaluator::AREA_USERS, $blocked[$frontpage] ?? []);
+        $this->assertNotContains(context_evaluator::AREA_COURSES, $blocked[$frontpage] ?? []);
     }
 
     /**

@@ -27,6 +27,8 @@
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+import {markFormChangedFromNode} from 'core_form/changechecker';
+
 const SETTING_SELECTOR = '.local-wproofreader-rules-setting';
 const PARTS = ['role', 'feature', 'area'];
 const EVERYONE = 0;
@@ -133,9 +135,13 @@ export const init = (strings) => {
         || !controls || !count || !nomatch || !sortBy
         || PARTS.some((part) => !selects[part] || !filters[part]);
 
-    if (missing || store.disabled) {
+    if (missing) {
         return;
     }
+
+    // A forced setting arrives with the store disabled. The rules are still
+    // worth showing, so only the ways to change them are left out.
+    const readonly = store.disabled;
 
     let rules = readRules(store);
     let editing = null;
@@ -160,10 +166,18 @@ export const init = (strings) => {
     const labelOf = (part, value) => labels[part].get(String(value))
         ?? (part === 'role' ? strings.missingRole : String(value));
 
+    const areaLabelOf = (rule) => {
+        const blocked = strings.unreachable?.[String(rule.role)] ?? [];
+
+        return rule.area === ANY && blocked.length
+            ? strings.whereAvailable
+            : labelOf('area', rule.area);
+    };
+
     const sentenceOf = (rule) => fill(strings.sentence, {
         '@@ROLE@@': labelOf('role', rule.role),
         '@@FEATURE@@': labelOf('feature', rule.feature),
-        '@@AREA@@': labelOf('area', rule.area),
+        '@@AREA@@': areaLabelOf(rule),
     });
 
     const phrase = (kind, numbers) => {
@@ -207,8 +221,8 @@ export const init = (strings) => {
     /**
      * A copy of one builder dropdown, ready to sit inside a table row.
      *
-     * Cloning keeps the options, and their wording, in one place. The name and
-     * the id have to go, or the row would post over the builder's own values.
+     * Cloning keeps the options, and their wording, in one place. The id has
+     * to go, or the row would carry the builder's own.
      *
      * @param {string} part Which part of the rule the dropdown chooses.
      * @param {string|number} value Value to select.
@@ -249,25 +263,30 @@ export const init = (strings) => {
     /**
      * Offer only the site parts the chosen role can open.
      *
-     * A role blocked from any site part is not offered the wildcard either: it
-     * cannot be everywhere, so saying so would be a lie. An open edit row keeps
-     * whatever its rule already says, so the row reads true, and it needs no
-     * prompt because the rule exists already.
+     * The wildcard stays on offer for every role. A narrowed role cannot be
+     * everywhere, so for one the wildcard reads as the parts it can open.
+     *
+     * Some site parts are offered whatever the role can reach: the builder
+     * keeps its prompt, and an edit row keeps the part its own rule already
+     * names, so a rule that is already unreachable still reads true. That
+     * second one only holds while the row keeps its own role: pick another and
+     * the blocked parts go, or the row could save what the builder refuses.
      *
      * @param {HTMLSelectElement} role The role dropdown.
      * @param {HTMLSelectElement} area The site part dropdown beside it.
+     * @param {string[]} keep Site parts to offer whether they are blocked or not.
      */
-    const applyReach = (role, area) => {
-        const builder = area === selects.area;
+    const applyReach = (role, area, keep = []) => {
         const wanted = area.value;
         const blocked = strings.unreachable?.[String(role.value)] ?? [];
-        const hidden = blocked.length ? blocked.concat(ANY) : [];
 
         area.replaceChildren(...allAreas
-            .filter(([value]) => value === ''
-                ? builder
-                : ((!builder && value === wanted) || !hidden.includes(value)))
-            .map(([value, label]) => new Option(label, value)));
+            .filter(([value]) => keep.includes(value)
+                || (value !== '' && !blocked.includes(value)))
+            .map(([value, label]) => new Option(
+                value === ANY && blocked.length ? strings.whereAvailable : label,
+                value
+            )));
 
         area.value = wanted;
 
@@ -366,6 +385,12 @@ export const init = (strings) => {
             text.appendChild(markerOf(warning));
         }
 
+        if (readonly) {
+            row.append(number, text);
+
+            return row;
+        }
+
         const actions = document.createElement('td');
         actions.className = 'local-wproofreader-rule-actions';
 
@@ -411,7 +436,17 @@ export const init = (strings) => {
     const render = () => {
         const shown = visible();
 
-        store.value = JSON.stringify(rules);
+        const stored = JSON.stringify(rules);
+
+        // Writing the field fires no event of its own, so the page would
+        // otherwise let an admin leave with a removal unsaved and unmentioned.
+        // Filtering and sorting land here too and write the same string, which
+        // is why the warning hangs off the value rather than the call.
+        if (store.value !== stored) {
+            store.value = stored;
+            markFormChangedFromNode(store);
+        }
+
         body.replaceChildren(...shown.map(({rule, index}) => rowOf(rule, index)));
 
         table.hidden = shown.length === 0;
@@ -467,8 +502,13 @@ export const init = (strings) => {
     };
 
     const preview = () => {
+        if (readonly) {
+            return;
+        }
+
+        applyReach(selects.role, selects.area, ['']);
+
         if (editing === null) {
-            applyReach(selects.role, selects.area);
             say(notice, phraseFor(chosen(), null));
             return;
         }
@@ -478,8 +518,14 @@ export const init = (strings) => {
 
         // The visible() helper always keeps the row being edited, whatever the filter says.
         const row = body.querySelector('[data-rule-editrow]');
+        const field = row.querySelector('[data-rule-field="role"]');
+        const stored = rules[editing];
 
-        applyReach(row.querySelector('[data-rule-field="role"]'), row.querySelector('[data-rule-field="area"]'));
+        applyReach(
+            field,
+            row.querySelector('[data-rule-field="area"]'),
+            Number(field.value) === stored.role ? [stored.area] : []
+        );
 
         const spelled = chosenIn(row);
 
@@ -510,103 +556,116 @@ export const init = (strings) => {
         return true;
     };
 
-    // Enter inside an edit row would otherwise reach the page's own save button
-    // and leave the edit behind.
-    body.addEventListener('change', preview);
-
-    body.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' && editing !== null) {
-            event.preventDefault();
-            commit();
-        }
-    });
-
-    // Saving the settings page with a row still open takes the row with it,
-    // rather than quietly storing the list as it stood before the edit.
-    root.closest('form')?.addEventListener('submit', () => {
-        if (editing !== null) {
-            commit();
-        }
-    });
-
     PARTS.forEach((part) => {
-        selects[part].addEventListener('change', preview);
         filters[part].addEventListener('change', render);
     });
 
     sortBy.addEventListener('change', render);
 
-    addButton.addEventListener('click', () => {
-        const rule = chosen();
+    if (!readonly) {
+        body.addEventListener('change', preview);
 
-        if (!rule) {
-            const unchosen = PARTS.find((part) => selects[part].value === '');
+        // Enter in one of the row's dropdowns would otherwise reach the page's own
+        // save button and leave the edit behind. It is answered only there: on a
+        // button, preventing the default would stop the click, so Cancel would
+        // commit the row instead of dropping it.
+        body.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter' || editing === null) {
+                return;
+            }
 
-            selects[unchosen].focus();
-            return;
-        }
+            if (!event.target.closest('[data-rule-field]')) {
+                return;
+            }
 
-        rules.push(rule);
-        PARTS.forEach((part) => {
-            selects[part].value = '';
-        });
-        render();
-    });
-
-    root.addEventListener('click', (event) => {
-        const edit = event.target.closest('[data-rule-edit]');
-
-        if (edit) {
-            event.preventDefault();
-            editing = Number(edit.dataset.ruleEdit);
-            pending = null;
-            render();
-            body.querySelector('[data-rule-field="role"]').focus();
-
-            return;
-        }
-
-        const save = event.target.closest('[data-rule-save]');
-
-        if (save) {
             event.preventDefault();
             commit();
+        });
 
-            return;
-        }
+        // Saving the settings page with a row still open takes the row with it,
+        // rather than quietly storing the list as it stood before the edit.
+        root.closest('form')?.addEventListener('submit', () => {
+            if (editing !== null) {
+                commit();
+            }
+        });
 
-        const cancel = event.target.closest('[data-rule-cancel]');
+        PARTS.forEach((part) => {
+            selects[part].addEventListener('change', preview);
+        });
 
-        if (cancel) {
-            event.preventDefault();
-            editing = null;
-            pending = null;
+        addButton.addEventListener('click', () => {
+            const rule = chosen();
+
+            if (!rule) {
+                const unchosen = PARTS.find((part) => selects[part].value === '');
+
+                selects[unchosen].focus();
+                return;
+            }
+
+            rules.push(rule);
+            PARTS.forEach((part) => {
+                selects[part].value = '';
+            });
             render();
+        });
 
-            return;
-        }
+        root.addEventListener('click', (event) => {
+            const edit = event.target.closest('[data-rule-edit]');
 
-        const remove = event.target.closest('[data-rule-remove]');
+            if (edit) {
+                event.preventDefault();
+                editing = Number(edit.dataset.ruleEdit);
+                pending = null;
+                render();
+                body.querySelector('[data-rule-field="role"]').focus();
 
-        if (!remove) {
-            return;
-        }
+                return;
+            }
 
-        event.preventDefault();
+            const save = event.target.closest('[data-rule-save]');
 
-        const index = Number(remove.dataset.ruleRemove);
+            if (save) {
+                event.preventDefault();
+                commit();
 
-        rules.splice(index, 1);
+                return;
+            }
 
-        if (editing === index) {
-            editing = null;
-            pending = null;
-        } else if (editing !== null && editing > index) {
-            editing -= 1;
-        }
+            const cancel = event.target.closest('[data-rule-cancel]');
 
-        render();
-    });
+            if (cancel) {
+                event.preventDefault();
+                editing = null;
+                pending = null;
+                render();
+
+                return;
+            }
+
+            const remove = event.target.closest('[data-rule-remove]');
+
+            if (!remove) {
+                return;
+            }
+
+            event.preventDefault();
+
+            const index = Number(remove.dataset.ruleRemove);
+
+            rules.splice(index, 1);
+
+            if (editing === index) {
+                editing = null;
+                pending = null;
+            } else if (editing !== null && editing > index) {
+                editing -= 1;
+            }
+
+            render();
+        });
+    }
 
     render();
 };
