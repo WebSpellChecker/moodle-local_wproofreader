@@ -74,50 +74,36 @@ All settings live under *Site administration > Plugins > Local plugins > WProofr
 ### Feature access rules
 
 Each rule reads as a sentence: *Student is allowed to check grammar in quiz
-attempts*. Complete all three dropdowns and press *Add rule*; the rules reach the
-database when you save the page.
+attempts*. Choose the three dropdowns and press *Add rule*. The rules are applied when you save the settings.
 
-Rules only grant. A user gets a feature wherever at least one rule allows it,
-and a site with no rules runs no proofreading at all. A fresh install starts
-with a single rule, *Everyone is allowed to do everything everywhere*; a site
-upgrading from 2.0.0 keeps the reach its old toggles gave it.
+A rule only gives access. A user gets a feature if a minimum of one rule allows
+it, and a site with no rule does no proofreading. A new installation starts with
+one rule, *Everyone is allowed to do everything everywhere*. A site that
+upgrades from 2.0.0 keeps the reach that its old settings gave it.
 
 | Dropdown  | Values |
 |-----------|--------|
-| Role      | *Everyone*, plus every role defined on the site. |
+| Role      | *Everyone*, and every role on the site. |
 | Feature   | *do everything*, check spelling, check grammar, apply style suggestions, autocorrect text, autocomplete text, use the AI writing assistant. |
-| Site part | *everywhere*, in courses and activities, in quiz attempts, in course categories, on user pages, on system pages, in site administration. The list is narrowed to what the chosen role can open. A role that cannot reach every site part is still offered the wildcard, which reads *where available* for it and means the parts that role can open. |
+| Site part | *everywhere*, in courses and activities, in quiz attempts, in course categories, on user pages, on system pages, in site administration. Each role is offered only the parts it can open. A role with a shorter list keeps the wildcard, which reads *where available* and means the parts that role can open. |
 
-The rules added so far are listed underneath the dropdowns, numbered in the
-order they were added, each with a button that removes it. Adding and removing
-change the page only: nothing is stored until *Save changes* is pressed.
+The rules are listed below the dropdowns, each with its own number. You can
+filter the list, sort it, change a rule in the row it occupies, and remove it.
 
-Above the table, a filter narrows the list by role, feature or site part, and a
-sort control reorders it by any of the three, alphabetically by the words the
-rows actually read. Both act on the page only. Rule numbers belong to the rule rather than to the row it occupies, so
-sorting and filtering never change what a warning refers to.
 
-*Edit* turns a row into the same sentence in dropdowns, with *Save* and
-*Cancel* in place of the row's buttons. The rule keeps its number and its place
-in the list, and a warning bar inside the row reports how the edited version
-would stand while it is still being changed. Enter saves the row.
+A rule that repeats another rule, or that another rule covers, is reported and
+never refused. While you write a rule, a bar above the table tells you how it
+stands against the rules already listed. An information icon marks each saved
+row that adds nothing.
 
-The rules table is drawn in the browser, so the section needs JavaScript.
+Moodle matches the roles against the page. In *courses and activities* and
+*quiz attempts*, the roles of the user in that course apply. In the other parts
+of the site no course role is in scope, so every role of the user applies. A
+site administrator is matched in the same way as all other users, so a site
+whose rules name only specific roles gives an administrator nothing until a
+rule covers a role they hold.
 
-Nothing stops a rule that repeats another one, or that another one already
-covers. As soon as all three dropdowns are chosen, a bar above the table says
-how the rule being composed stands against the ones already listed, naming them
-by number, and any saved row that adds nothing is marked with an information
-icon carrying the same explanation.
-
-Roles are matched against the page being viewed. In *courses and activities*
-and *quiz attempts* that means the role the user holds in that course; in the
-other site parts, where no course role is in scope, it means any role the user
-holds anywhere on the site. Site administrators are matched the same way as
-anyone else, so a site whose rules name only specific roles gives an
-administrator nothing until a rule covers a role they hold.
-
-The AI writing assistant stays off on the free version whatever the rules say.
+The AI writing assistant stays off on the free version, whatever the rules say.
 
 ### Spelling ignore options
 
