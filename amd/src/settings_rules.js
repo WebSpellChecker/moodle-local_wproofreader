@@ -221,9 +221,6 @@ export const init = (strings) => {
     /**
      * A copy of one builder dropdown, ready to sit inside a table row.
      *
-     * Cloning keeps the options, and their wording, in one place. The id has
-     * to go, or the row would carry the builder's own.
-     *
      * @param {string} part Which part of the rule the dropdown chooses.
      * @param {string|number} value Value to select.
      * @returns {HTMLSelectElement}
@@ -265,12 +262,6 @@ export const init = (strings) => {
      *
      * The wildcard stays on offer for every role. A narrowed role cannot be
      * everywhere, so for one the wildcard reads as the parts it can open.
-     *
-     * Some site parts are offered whatever the role can reach: the builder
-     * keeps its prompt, and an edit row keeps the part its own rule already
-     * names, so a rule that is already unreachable still reads true. That
-     * second one only holds while the row keeps its own role: pick another and
-     * the blocked parts go, or the row could save what the builder refuses.
      *
      * @param {HTMLSelectElement} role The role dropdown.
      * @param {HTMLSelectElement} area The site part dropdown beside it.
@@ -413,9 +404,6 @@ export const init = (strings) => {
     /**
      * The rules to draw, in the order and selection the controls ask for.
      *
-     * Each one keeps the position it holds in the stored list, because that
-     * position is the number the table shows and the warnings refer to.
-     *
      * @returns {Array} Entries of rule and stored position.
      */
     const visible = () => {
@@ -438,10 +426,6 @@ export const init = (strings) => {
 
         const stored = JSON.stringify(rules);
 
-        // Writing the field fires no event of its own, so the page would
-        // otherwise let an admin leave with a removal unsaved and unmentioned.
-        // Filtering and sorting land here too and write the same string, which
-        // is why the warning hangs off the value rather than the call.
         if (store.value !== stored) {
             store.value = stored;
             markFormChangedFromNode(store);
@@ -565,10 +549,6 @@ export const init = (strings) => {
     if (!readonly) {
         body.addEventListener('change', preview);
 
-        // Enter in one of the row's dropdowns would otherwise reach the page's own
-        // save button and leave the edit behind. It is answered only there: on a
-        // button, preventing the default would stop the click, so Cancel would
-        // commit the row instead of dropping it.
         body.addEventListener('keydown', (event) => {
             if (event.key !== 'Enter' || editing === null) {
                 return;
@@ -582,8 +562,6 @@ export const init = (strings) => {
             commit();
         });
 
-        // Saving the settings page with a row still open takes the row with it,
-        // rather than quietly storing the list as it stood before the edit.
         root.closest('form')?.addEventListener('submit', () => {
             if (editing !== null) {
                 commit();

@@ -158,11 +158,6 @@ class admin_setting_access_rules extends admin_setting {
     /**
      * The rules to draw the table from.
      *
-     * Moodle hands output_html() the submitted data rather than the stored
-     * rules when write_setting() reported an error. A list that can be read
-     * is shown back, so nothing the administrator did is lost; one that
-     * cannot be read leaves the stored rules as the only thing to show.
-     *
      * @param mixed $data Stored rules, or the data the form submitted.
      * @return array[]
      */
@@ -174,9 +169,6 @@ class admin_setting_access_rules extends admin_setting {
 
     /**
      * The filter and sort controls that sit above the table.
-     *
-     * They act on the page rather than on the stored rules, so they are hidden
-     * until the script that works them is running.
      *
      * @return string
      */
@@ -317,9 +309,6 @@ class admin_setting_access_rules extends admin_setting {
 
     /**
      * The rule sentence with a marker where each part goes.
-     *
-     * The browser writes the same sentences as the server does, so it is given
-     * the translated wording rather than a word order built into the script.
      *
      * @return string
      */

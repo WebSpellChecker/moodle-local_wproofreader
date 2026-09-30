@@ -105,16 +105,6 @@ class context_evaluator {
     /**
      * Capabilities that open a page in the site administration tree.
      *
-     * No single capability stands for the area. The tree is assembled from
-     * every installed plugin's settings, and each page names the capabilities
-     * that open it, so the list is read from the tree itself and follows
-     * whatever the site has installed.
-     *
-     * The tree is built for whoever is looking, because settings files add
-     * their pages behind their own capability checks. That is answered by the
-     * one caller: the plugin's settings page, which only an administrator can
-     * open, so the tree is complete by the time this runs.
-     *
      * @return string[] Capability names, empty when the tree cannot be read.
      */
     private static function admin_capabilities(): array {
@@ -293,9 +283,6 @@ class context_evaluator {
     /**
      * The role the current user has switched to over this page, if any.
      *
-     * Switching is recorded against the context it was made in, so a switch made
-     * in a course applies to everything inside it.
-     *
      * @param \context $context Page context.
      * @return int Role id, or zero when no switch applies here.
      */
@@ -308,9 +295,6 @@ class context_evaluator {
             return 0;
         }
 
-        // Nearest first, so a switch made in the activity wins over one made in
-        // the course around it. The paths come from core rather than from a
-        // prefix test, which would match /1/23 against a switch at /1/2.
         foreach (array_reverse($context->get_parent_context_paths(true)) as $path) {
             if (isset($switches[$path])) {
                 return (int) $switches[$path];
@@ -358,12 +342,6 @@ class context_evaluator {
 
     /**
      * Whether the current module is a quiz-style activity.
-     *
-     * On the quiz attempt page (`mod-quiz-attempt`) the hook fires before
-     * `$PAGE->cm` is populated, so `$page->cm` is null at this point even
-     * though it is set later (the body class still ends up with
-     * `cm-type-quiz`). Pagetype is set by the time the hook fires and is
-     * used as a fallback signal.
      *
      * @param \moodle_page $page Current page.
      * @return bool

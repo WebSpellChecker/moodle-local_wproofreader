@@ -83,10 +83,6 @@ class access_rules {
 
         $rules = [];
 
-        // Reading skips what it cannot make sense of rather than refusing the
-        // whole list. A single rule naming something this version does not know,
-        // after a downgrade or a hand edit, must not switch the plugin off site
-        // wide and then be written over on the next save.
         foreach ($stored as $rule) {
             $normalized = is_array($rule)
                 ? self::normalize($rule['role'] ?? null, $rule['feature'] ?? null, $rule['area'] ?? null)
