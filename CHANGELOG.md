@@ -2,6 +2,12 @@
 
 All notable changes to the WProofreader plugin for Moodle are documented here.
 
+## 2.2.0 (2026-09-30)
+
+* Migrated the proofreading access configuration to access rules. A rule gives one role one proofreading feature on one part of the site: *Student is allowed to check grammar in quiz attempts*.
+* Migrated an existing site on upgrade. Each feature that is on pairs with each part of the site that is on, each pair becomes one rule for Everyone, and the twelve old settings are deleted. The site keeps the same reach.
+* Configured the rules in the "Feature access rules" section of the settings page, where an administrator writes, changes and removes them. A rule that repeats another one is reported and never refused.
+
 ## 2.0.0 (2026-08-20)
 
 * Widened official Moodle support to 4.1 through the 5.2 branch (previously 4.5 LTS through 5.2).

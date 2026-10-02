@@ -71,16 +71,39 @@ All settings live under *Site administration > Plugins > Local plugins > WProofr
 | Default language     | Auto        | Initial proofreading language. *Auto* lets the WebSpellChecker service detect the language from the content being checked; pick a specific language to pin it. The dropdown is refreshed live from the service when the settings page loads. |
 | Show badge button    | enabled     | Toggles the orange WProofreader badge on or off. A separate badge attaches to each editor on the page. |
 
-### Proofreading features
+### Feature access rules
 
-| Setting              | Default   | Maps to (bundle keys) |
-|----------------------|-----------|------------------------|
-| Spelling             | enabled   | `spellingSuggestions` |
-| Grammar              | enabled   | `enableGrammar` + `grammarSuggestions` |
-| Style                | enabled   | `styleGuideSuggestions` |
-| Autocorrect          | disabled  | `autocorrect` |
-| Text autocomplete    | disabled  | `autocomplete` |
-| AI writing assistant | enabled   | `aiWritingAssistant` (paid only) |
+Each rule reads as a sentence: *Student is allowed to check grammar in quiz
+attempts*. Choose the three dropdowns and press *Add rule*. The rules are applied when you save the settings.
+
+A rule only gives access. A user gets a feature if a minimum of one rule allows
+it, and a site with no rule does no proofreading. A new installation starts with
+one rule, *Everyone is allowed to do everything everywhere*. A site that
+upgrades from 2.0.0 keeps the reach that its old settings gave it.
+
+| Dropdown  | Values |
+|-----------|--------|
+| Role      | *Everyone*, and every role on the site. |
+| Feature   | *do everything*, check spelling, check grammar, apply style suggestions, autocorrect text, autocomplete text, use the AI writing assistant. |
+| Site part | *everywhere*, in courses and activities, in quiz attempts, in course categories, on user pages, on system pages, in site administration. Each role is offered only the parts it can open. A role with a shorter list keeps the wildcard, which reads *where available* and means the parts that role can open. |
+
+The rules are listed below the dropdowns, each with its own number. You can
+filter the list, sort it, change a rule in the row it occupies, and remove it.
+
+
+A rule that repeats another rule, or that another rule covers, is reported and
+never refused. While you write a rule, a bar above the table tells you how it
+stands against the rules already listed. An information icon marks each saved
+row that adds nothing.
+
+Moodle matches the roles against the page. In *courses and activities* and
+*quiz attempts*, the roles of the user in that course apply. In the other parts
+of the site no course role is in scope, so every role of the user applies. A
+site administrator is matched in the same way as all other users, so a site
+whose rules name only specific roles gives an administrator nothing until a
+rule covers a role they hold.
+
+The AI writing assistant stays off on the free version, whatever the rules say.
 
 ### Spelling ignore options
 
@@ -91,20 +114,9 @@ All settings live under *Site administration > Plugins > Local plugins > WProofr
 | Ignore words with mixed case     | enabled   | `ignoreWordsWithMixedCases` |
 | Ignore words with numbers        | enabled   | `ignoreWordsWithNumbers`    |
 
-### Where to enable WProofreader
-
-| Setting                          | Default  | Maps to |
-|----------------------------------|----------|---------|
-| Enable in courses and activities | enabled  | `CONTEXT_COURSE`, `CONTEXT_MODULE` (excluding quiz / feedback) |
-| Enable in course categories      | enabled  | `CONTEXT_COURSECAT` |
-| Enable on user pages             | enabled  | `CONTEXT_USER` (profile, dashboard, personal blog) |
-| Enable in quiz attempts          | disabled | `mod_quiz`, `mod_questionnaire`, `mod_feedback` |
-| Enable on system pages           | disabled | `CONTEXT_SYSTEM` pages such as the global calendar, global search, and system tag browsing. The site front page itself is treated as a course and falls under *Enable in courses and activities*. |
-| Enable in site administration    | disabled | Pages with a `pagetype` that starts with `admin-` |
-
 ## How it works
 
-* On each page render, the plugin checks the per-context toggles, emits an inline bootstrap script with the proofreader config, and queues an AMD module to start.
+* On each page render, the plugin checks the `local/wproofreader:use` capability, maps the page to a site part, resolves the roles the user holds there, and asks the access rules which features they are allowed. If the answer is none, nothing is injected. Otherwise it emits an inline bootstrap script with the proofreader config and queues an AMD module to start.
 * The AMD module loads the WProofreader JS library from `svc.webspellchecker.net` and attaches it to Atto, TinyMCE, and plain HTML textareas on the page.
 * The settings page refreshes the supported-language list from the service when opened, and caches it server-side for the next render.
 

@@ -27,3 +27,204 @@
     font-weight: bold;
     color: #f0ad4e;
 }
+
+/* The words between the dropdowns of a sentence. */
+.local-wproofreader-rule-builder > span,
+.local-wproofreader-rule-edit > span {
+    color: #6c757d;
+}
+
+/* Every dropdown in this section sizes to its content and never overflows. */
+.local-wproofreader-rule-builder select,
+.local-wproofreader-rules-controls select,
+.local-wproofreader-rule-edit select {
+    width: auto;
+    max-width: 100%;
+}
+
+/*
+ * The rule builder reads as one sentence, so its dropdowns and the words
+ * between them sit on one line and wrap together on a narrow screen. The panel
+ * around them separates composing a rule from the list of rules below.
+ */
+.local-wproofreader-rule-builder {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 1rem;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    background-color: #f8f9fa;
+}
+
+/* Keeps the button at the end of the row, whether or not the sentence wraps. */
+.local-wproofreader-rule-builder > button {
+    margin-left: auto;
+}
+
+.local-wproofreader-rule-notice {
+    margin-top: 0.75rem;
+    margin-bottom: 0;
+}
+
+/*
+ * Filter and sort row. It wraps the same way the builder does, so both read as
+ * one block on a narrow screen.
+ */
+.local-wproofreader-rules-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #dee2e6;
+}
+
+/* A label and the dropdowns it names wrap as one, never apart. */
+.local-wproofreader-rules-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.local-wproofreader-rules-label {
+    margin-bottom: 0;
+    color: #495057;
+    font-weight: bold;
+}
+
+.local-wproofreader-rules-count {
+    margin-left: auto;
+    font-size: 0.875em;
+}
+
+/* Rules table. */
+.local-wproofreader-rules {
+    margin-top: 0.75rem;
+    margin-bottom: 0;
+}
+
+.local-wproofreader-rules thead th {
+    border-top: 0;
+    color: #495057;
+    font-size: 0.875em;
+    white-space: nowrap;
+}
+
+.local-wproofreader-rules thead th:last-child {
+    text-align: right;
+}
+
+.local-wproofreader-rules td {
+    vertical-align: middle;
+}
+
+.local-wproofreader-rules tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.local-wproofreader-rule-number {
+    width: 3rem;
+    color: #6c757d;
+    font-variant-numeric: tabular-nums;
+}
+
+.local-wproofreader-rule-actions {
+    width: 1%;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.local-wproofreader-rule-actions .btn + .btn {
+    margin-left: 0.35rem;
+}
+
+.local-wproofreader-rules-empty {
+    margin-top: 0.75rem;
+    margin-bottom: 0;
+    padding: 1.75rem 1rem;
+    border: 1px dashed #dee2e6;
+    border-radius: 0.5rem;
+    text-align: center;
+}
+
+/*
+ * Marker on a rule that repeats or is covered by another one. The box opens on
+ * hover and on focus, so that a keyboard reaches it as well as a pointer. What
+ * it says is also the marker's own label, for anyone who reads rather than sees.
+ */
+.local-wproofreader-rule-info {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.15rem;
+    height: 1.15rem;
+    margin-left: 0.4rem;
+    border: 1px solid #f0ad4e;
+    border-radius: 50%;
+    color: #f0ad4e;
+    font-size: 0.75rem;
+    font-style: italic;
+    font-weight: bold;
+    line-height: 1;
+    cursor: help;
+    vertical-align: middle;
+}
+
+.local-wproofreader-rule-infobox {
+    position: absolute;
+    bottom: calc(100% + 0.4rem);
+    left: 50%;
+    z-index: 1;
+    width: max-content;
+    max-width: 18rem;
+    padding: 0.5rem 0.65rem;
+    border: 1px solid #f0ad4e;
+    border-radius: 0.25rem;
+    background: #fff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    color: #3c4652;
+    font-size: 0.8125rem;
+    font-style: normal;
+    font-weight: normal;
+    line-height: 1.4;
+    text-align: left;
+    white-space: normal;
+    transform: translateX(-50%);
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.1s ease-in;
+}
+
+.local-wproofreader-rule-info:hover .local-wproofreader-rule-infobox,
+.local-wproofreader-rule-info:focus-within .local-wproofreader-rule-infobox {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* A row being edited holds the same sentence, in dropdowns. */
+.local-wproofreader-rule-edit {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.local-wproofreader-rules tbody tr.local-wproofreader-rule-editing,
+.local-wproofreader-rules tbody tr.local-wproofreader-rule-editing:hover {
+    background-color: #f8f9fa;
+    box-shadow: inset 3px 0 0 #0f6cbf;
+}
+
+/* The warning about an edited rule belongs with the row being edited. */
+.local-wproofreader-rule-editnotice {
+    flex-basis: 100%;
+    margin-top: 0.25rem;
+    margin-bottom: 0;
+    padding: 0.4rem 0.7rem;
+    font-size: 0.875em;
+}

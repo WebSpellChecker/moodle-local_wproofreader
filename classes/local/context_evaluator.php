@@ -17,63 +17,291 @@
 namespace local_wproofreader\local;
 
 /**
- * Decides whether WProofreader should be activated on the current page.
+ * Works out what WProofreader may do on the current page.
  *
- * The evaluator reads the plugin settings and the Moodle page context, then
- * answers a single yes / no question. Each context level is mapped to one of
- * the toggle settings to keep behavior predictable.
+ * The page is mapped to one area of the site and the user to the roles that
+ * apply there, then the access rules say which features they are allowed. An
+ * empty answer means the plugin does not load at all.
  *
  * @package    local_wproofreader
  * @copyright  2026 WebSpellChecker
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class context_evaluator {
+    /** @var string Course and activity pages. */
+    public const AREA_COURSES = 'courses';
+
+    /** @var string Quiz-style activity pages. */
+    public const AREA_QUIZ = 'quiz';
+
+    /** @var string Course category pages. */
+    public const AREA_CATEGORIES = 'categories';
+
+    /** @var string User pages, such as a profile or the dashboard. */
+    public const AREA_USERS = 'users';
+
+    /** @var string System level pages, such as the global calendar. */
+    public const AREA_FRONTEND = 'frontend';
+
+    /** @var string Site administration pages. */
+    public const AREA_ADMIN = 'admin';
+
     /**
-     * Should WProofreader be enabled on the given page?
+     * Areas of the site, in the order the rule builder lists them.
+     *
+     * @var string[]
+     */
+    public const AREAS = [
+        self::AREA_COURSES,
+        self::AREA_QUIZ,
+        self::AREA_CATEGORIES,
+        self::AREA_USERS,
+        self::AREA_FRONTEND,
+        self::AREA_ADMIN,
+    ];
+
+    /**
+     * Areas rendered inside a course, where a course role assignment applies.
+     *
+     * Roles are resolved against the page context in these areas, so being a
+     * student in the course being viewed is what counts. Everywhere else a
+     * course role is not in scope, and the roles the user holds anywhere on the
+     * site are used instead, otherwise those rules could never take effect.
+     *
+     * @var string[]
+     */
+    public const COURSE_AREAS = [self::AREA_COURSES, self::AREA_QUIZ];
+
+    /**
+     * Areas a role cannot reach, which the rule builder does not offer.
+     *
+     * @return array Role id against the area keys it cannot reach.
+     */
+    public static function unreachable_areas(): array {
+        global $CFG;
+
+        $blocked = [];
+        $roles = get_all_roles();
+
+        foreach (array_keys(array_diff_key($roles, self::roles_reaching_admin())) as $roleid) {
+            $blocked[(int) $roleid] = [self::AREA_ADMIN];
+        }
+
+        $frontpage = (int) ($CFG->defaultfrontpageroleid ?? 0);
+
+        // Only the dedicated front page role is confined to the site home, where
+        // core applies it through config rather than assignment. A site that points
+        // the setting at an ordinary role still holds that role wherever it is
+        // assigned, and rules naming it do take effect there.
+        if ($frontpage && ($roles[$frontpage]->archetype ?? '') === 'frontpage') {
+            // Every non-course area, which already covers site administration and
+            // so replaces any entry the capability loop made.
+            $blocked[$frontpage] = array_values(array_diff(self::AREAS, self::COURSE_AREAS));
+        }
+
+        return $blocked;
+    }
+
+    /**
+     * Capabilities that open a page in the site administration tree.
+     *
+     * @return string[] Capability names, empty when the tree cannot be read.
+     */
+    private static function admin_capabilities(): array {
+        global $CFG;
+
+        static $capabilities = null;
+
+        if ($capabilities !== null) {
+            return $capabilities;
+        }
+
+        require_once($CFG->libdir . '/adminlib.php');
+
+        $found = [];
+        $pending = [admin_get_root(false, true)];
+
+        while ($node = array_pop($pending)) {
+            // A category answers every other property with an exception, so the
+            // declared property is what decides, not isset() or a null check.
+            if (property_exists($node, 'req_capability')) {
+                foreach ((array) $node->req_capability as $capability) {
+                    $found[$capability] = true;
+                }
+            }
+
+            if (method_exists($node, 'get_children')) {
+                foreach ($node->get_children() as $child) {
+                    $pending[] = $child;
+                }
+            }
+        }
+
+        $capabilities = array_keys($found);
+
+        return $capabilities;
+    }
+
+    /**
+     * Roles that hold at least one capability opening a site administration page.
+     *
+     * @return array Role ids as keys, so the caller can diff against all roles.
+     */
+    private static function roles_reaching_admin(): array {
+        global $DB;
+
+        $capabilities = self::admin_capabilities();
+
+        if (!$capabilities) {
+            // Nothing to judge by, so nothing is narrowed. Refusing every role
+            // would be a guess, and the rules only ever add access.
+            return array_flip(array_keys(get_all_roles()));
+        }
+
+        [$insql, $params] = $DB->get_in_or_equal($capabilities, SQL_PARAMS_NAMED, 'cap');
+        $params['permission'] = CAP_ALLOW;
+        $params['contextid'] = \context_system::instance()->id;
+
+        $roleids = $DB->get_fieldset_select(
+            'role_capabilities',
+            'DISTINCT roleid',
+            "capability {$insql} AND permission = :permission AND contextid = :contextid",
+            $params
+        );
+
+        return array_flip(array_map('intval', $roleids));
+    }
+
+    /**
+     * Features the current user is allowed on the given page.
      *
      * @param \moodle_page $page Current Moodle page.
-     * @return bool
+     * @return string[] Feature keys, empty when WProofreader must not load.
      */
-    public static function should_enable(\moodle_page $page): bool {
+    public static function allowed_features(\moodle_page $page): array {
         if (!has_capability('local/wproofreader:use', \context_system::instance())) {
-            return false;
+            return [];
         }
 
         $pagetype = (string) $page->pagetype;
 
         if (self::is_excluded_pagetype($pagetype)) {
-            return false;
+            return [];
         }
 
-        $context = $page->context;
-        $config = get_config('local_wproofreader');
+        $context = $page->context ?? \context_system::instance();
+        $area = self::area_for($page, $pagetype, $context);
 
+        return access_rules::granted($area, self::roleids_for($area, $context));
+    }
+
+    /**
+     * Which area of the site the given page belongs to.
+     *
+     * @param \moodle_page $page Current Moodle page.
+     * @param string $pagetype Pagetype string from $PAGE.
+     * @param \context $context Page context.
+     * @return string One of the AREA_* constants.
+     */
+    private static function area_for(\moodle_page $page, string $pagetype, \context $context): string {
         if (self::is_admin_pagetype($pagetype)) {
-            return !empty($config->enable_in_admin);
+            return self::AREA_ADMIN;
         }
 
-        $contextlevel = $context ? (int) $context->contextlevel : CONTEXT_SYSTEM;
-
-        switch ($contextlevel) {
+        switch ((int) $context->contextlevel) {
             case CONTEXT_MODULE:
-                if (self::is_quiz_module($page)) {
-                    return !empty($config->enable_on_quiz);
-                }
-                return !empty($config->enable_in_courses);
+                return self::is_quiz_module($page) ? self::AREA_QUIZ : self::AREA_COURSES;
 
             case CONTEXT_COURSE:
-                return !empty($config->enable_in_courses);
+                return self::AREA_COURSES;
 
             case CONTEXT_COURSECAT:
-                return !empty($config->enable_in_categories);
+                return self::AREA_CATEGORIES;
 
             case CONTEXT_USER:
-                return !empty($config->enable_on_users);
+                return self::AREA_USERS;
 
             case CONTEXT_SYSTEM:
             default:
-                return !empty($config->enable_on_frontend);
+                return self::AREA_FRONTEND;
         }
+    }
+
+    /**
+     * Role ids the current user holds, as they apply to the given area.
+     *
+     * @param string $area One of the AREA_* constants.
+     * @param \context $context Page context.
+     * @return int[]
+     */
+    private static function roleids_for(string $area, \context $context): array {
+        global $CFG, $USER;
+
+        $userid = (int) $USER->id;
+
+        if (($switched = self::switched_role($context)) && !isguestuser()) {
+            // Core weighs the switched role plus the default user role, which the
+            // accessdata below already carries for everyone else.
+            $default = (int) ($CFG->defaultuserroleid ?? 0);
+
+            return $default ? [$switched, $default] : [$switched];
+        }
+
+        if (isguestuser() && !empty($CFG->guestroleid)) {
+            return [(int) $CFG->guestroleid];
+        }
+
+        $roleids = [];
+
+        $incourse = in_array($area, self::COURSE_AREAS, true);
+
+        // The accessdata carries the front page role at the front page path, where
+        // it is applied through config rather than assigned. It only means anything
+        // on the site home, which is a course area, so it is skipped elsewhere.
+        $frontpage = (int) ($CFG->defaultfrontpageroleid ?? 0);
+        $frontpagepath = $frontpage ? \context_course::instance(SITEID)->path : '';
+
+        foreach (get_user_accessdata($userid)['ra'] as $path => $assigned) {
+            // Inside a course only the roles held there and above it count. The
+            // path comparison is anchored so that /1/2 does not match /1/23.
+            if ($incourse && strpos($context->path . '/', $path . '/') !== 0) {
+                continue;
+            }
+
+            foreach ($assigned as $roleid) {
+                if (!$incourse && (int) $roleid === $frontpage && $path === $frontpagepath) {
+                    continue;
+                }
+
+                $roleids[] = (int) $roleid;
+            }
+        }
+
+        return array_values(array_unique($roleids));
+    }
+
+    /**
+     * The role the current user has switched to over this page, if any.
+     *
+     * @param \context $context Page context.
+     * @return int Role id, or zero when no switch applies here.
+     */
+    private static function switched_role(\context $context): int {
+        global $USER;
+
+        $switches = $USER->access['rsw'] ?? [];
+
+        if (!$switches) {
+            return 0;
+        }
+
+        foreach (array_reverse($context->get_parent_context_paths(true)) as $path) {
+            if (isset($switches[$path])) {
+                return (int) $switches[$path];
+            }
+        }
+
+        return 0;
     }
 
     /**
@@ -93,13 +321,7 @@ class context_evaluator {
             'admin-tool-uploaduser',
         ];
 
-        foreach ($exclusions as $excluded) {
-            if ($pagetype === $excluded) {
-                return true;
-            }
-        }
-
-        return false;
+        return in_array($pagetype, $exclusions, true);
     }
 
     /**
@@ -120,12 +342,6 @@ class context_evaluator {
 
     /**
      * Whether the current module is a quiz-style activity.
-     *
-     * On the quiz attempt page (`mod-quiz-attempt`) the hook fires before
-     * `$PAGE->cm` is populated, so `$page->cm` is null at this point even
-     * though it is set later (the body class still ends up with
-     * `cm-type-quiz`). Pagetype is set by the time the hook fires and is
-     * used as a fallback signal.
      *
      * @param \moodle_page $page Current page.
      * @return bool
