@@ -2,6 +2,10 @@
 
 All notable changes to the WProofreader plugin for Moodle are documented here.
 
+## 2.2.1 (2026-10-05)
+
+* Added support for Moodle 5.3
+
 ## 2.2.0 (2026-09-30)
 
 * Migrated the proofreading access configuration to access rules. A rule gives one role one proofreading feature on one part of the site: *Student is allowed to check grammar in quiz attempts*.
